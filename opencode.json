@@ -5,6 +5,9 @@
   "instructions": [
     "AGENTS.md"
   ],
+  "plugin": [
+    "opencode-supermemory"
+  ],
   "model": "anthropic/claude-opus-4-5",
   "small_model": "anthropic/claude-sonnet-4-5",
   "agent": {
