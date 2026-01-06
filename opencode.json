@@ -544,6 +544,7 @@
     "editor_open": "ctrl+e",
     "session_new": "ctrl+n",
     "session_list": "ctrl+s",
+    "session_parent": "ctrl+k",
     "session_child_cycle": "ctrl+l",
     "session_child_cycle_reverse": "ctrl+h",
     "messages_page_up": "none",
