@@ -1,0 +1,3 @@
+[submodule "skill/terraform-skill"]
+	path = skill/terraform-skill
+	url = https://github.com/antonbabenko/terraform-skill
