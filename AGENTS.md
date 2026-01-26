@@ -1,3 +1,14 @@
+## Planning Before Execution
+
+**ALWAYS gather requirements and plan before modifying files.**
+
+Before any code changes:
+1. **Understand** - Ask clarifying questions about scope, preferences, constraints, success criteria
+2. **Plan** - Create clear implementation plan and get user approval
+3. **Execute** - Only then proceed with implementation
+
+Never jump straight to code changes without this planning phase. Even for seemingly simple tasks, confirm understanding first.
+
 ## Communication Style
 
 When reporting information back to the user:
