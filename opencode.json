@@ -15,47 +15,11 @@
     "smart": {
       "prompt": "{file:./agent/smart.md}"
     },
-    "plan": {
-      "model": "anthropic/claude-opus-4-5"
-    },
     "build": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "disable": true
     },
-    "Analyze": {
-      "model": "google/gemini-3-pro-preview",
-      "prompt": "{file:./prompts/analyze.md}",
-      "tools": {
-        "bash": true,
-        "edit": false,
-        "write": false,
-        "read": true,
-        "grep": true,
-        "glob": true,
-        "list": true,
-        "lsp": true,
-        "patch": false,
-        "skill": true,
-        "todowrite": false,
-        "todoread": false,
-        "webfetch": true
-      }
-    },
-    "Q&A": {
-      "model": "xai/grok-4-1-fast",
-      "prompt": "{file:./prompts/qa.md}",
-      "tools": {
-        "bash": true,
-        "edit": false,
-        "write": false,
-        "read": true,
-        "grep": true,
-        "glob": true,
-        "list": true,
-        "patch": false,
-        "todowrite": false,
-        "todoread": false,
-        "webfetch": true
-      }
+    "plan": {
+      "disable": true
     }
   },
   "formatter": {
