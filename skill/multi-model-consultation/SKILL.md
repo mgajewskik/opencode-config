@@ -1,101 +1,134 @@
 ---
 name: multi-model-consultation
-description: Consult multiple AI models (GPT, Gemini, Grok) for diverse perspectives on complex questions. Use when user says "ask gpt and gemini", "ask both", "ask all three", "consult gpt and gemini", "get opinions from gpt/gemini", "ask grok", or wants multi-model analysis on technical decisions, architecture choices, or complex problems requiring diverse viewpoints.
+description: Consult AI models (GPT, Gemini, Grok) for perspectives on questions. Use when user says "ask gpt", "ask gemini", "ask grok", "ask both", "ask all three", "ask gpt and gemini", "consult gemini", or wants model opinions on decisions. Spawns ONLY the models explicitly requested.
 ---
 
 # Multi-Model Consultation
 
-Query all three advisory subagents (GPT, Gemini, Grok) in parallel, synthesize their responses with your own analysis.
+Query advisory subagents (GPT, Gemini, Grok) based on user request. Spawn ONLY the models explicitly mentioned.
 
 ## Available Models
 
-| Model | Strengths | Training Bias |
-|-------|-----------|---------------|
-| @gpt | Strong reasoning, broad knowledge | OpenAI's perspective |
-| @gemini | Good at synthesis, multimodal | Google's perspective |
-| @grok | X/Twitter data, less filtered | xAI's perspective, contrarian |
+| Model | Subagent | Strengths |
+|-------|----------|-----------|
+| GPT | @gpt | Strong reasoning, broad knowledge |
+| Gemini | @gemini | Good at synthesis, multimodal |
+| Grok | @grok | X/Twitter data, less filtered, contrarian |
 
-## Trigger Patterns
+## Trigger Patterns - MATCH EXACTLY
 
-**Always spawn all 3 models** when user says:
-- "ask gpt and gemini..."
-- "ask both..."
-- "ask all three..."
-- "ask all models..."
-- "consult gpt and gemini..."
-- "get opinions on..."
-- "what do the models think about..."
+Parse user request and spawn ONLY requested models:
 
-All triggers spawn @gpt + @gemini + @grok for comprehensive coverage.
+| User Says | Spawn |
+|-----------|-------|
+| "ask gpt..." | @gpt only |
+| "ask gemini..." | @gemini only |
+| "ask grok..." | @grok only |
+| "ask gpt and gemini..." | @gpt + @gemini |
+| "ask gemini and grok..." | @gemini + @grok |
+| "ask gpt and grok..." | @gpt + @grok |
+| "ask both" (after mentioning 2) | the 2 mentioned |
+| "ask all three..." | @gpt + @gemini + @grok |
+| "ask all models..." | @gpt + @gemini + @grok |
+
+**Default behavior:** If ambiguous, ask user which model(s) they want. Do NOT default to all three.
 
 ## Workflow
 
-### Step 1: Form Your Own Opinion First
+### Step 1: Identify Requested Models
 
-Before spawning subagents, analyze the question yourself:
+Parse user request carefully:
+- Single model mentioned → spawn only that one
+- Two models mentioned → spawn only those two
+- "all three" / "all models" → spawn all three
+- Ambiguous → ask for clarification
+
+### Step 2: Form Your Own Opinion First
+
+Before spawning subagents:
 - What's your initial assessment?
 - What are the key considerations?
 - What's your preliminary recommendation?
 
-Document this internally - you'll compare against subagent responses.
+### Step 3: Spawn Requested Models in Parallel
 
-### Step 2: Spawn All Three Subagents in Parallel
-
-Use Task tool to spawn all models simultaneously:
+Spawn ONLY the models user requested, all at once:
 
 ```
+# Single model example
+Task 1: @gpt - [the question]
+
+# Two models example  
+Task 1: @gpt - [the question]
+Task 2: @gemini - [the question]
+
+# All three example
 Task 1: @gpt - [the question]
 Task 2: @gemini - [the question]
 Task 3: @grok - [the question]
 ```
 
-**Parallel execution is critical** - spawn all three at once, don't wait.
+### Step 4: Synthesize Responses
 
-### Step 3: Collect Structured Responses
+Adapt synthesis to number of models:
 
-All subagents return:
-```
-## Answer
-[Direct response]
-
-## Reasoning
-[Key considerations, tradeoffs]
-
-## Confidence
-[high/medium/low] - [explanation]
-
-## Sources/References
-[Skills loaded, URLs, files]
-```
-
-### Step 4: Synthesize and Compare
-
-Create synthesis with this structure:
-
+**Single model:**
 ```
 ## My Analysis
-[Your own assessment from Step 1]
+[Your assessment]
 
-## GPT's Perspective
-[Summary of GPT's answer and key reasoning]
-
-## Gemini's Perspective  
-[Summary of Gemini's answer and key reasoning]
-
-## Grok's Perspective
-[Summary of Grok's answer and key reasoning]
+## [Model]'s Perspective
+[Summary of response]
 
 ## Synthesis
+[Compare your view with model's, final recommendation]
+```
 
+**Two models:**
+```
+## My Analysis
+[Your assessment]
+
+## [Model 1]'s Perspective
+[Summary]
+
+## [Model 2]'s Perspective
+[Summary]
+
+## Synthesis
 ### Agreement
-[Where all four perspectives align]
+[Where perspectives align]
 
 ### Divergence
-[Where perspectives differ and why]
+[Where they differ]
 
 ### Recommendation
-[Your final recommendation, informed by all perspectives]
-[Explain which arguments you found most compelling and why]
+[Final recommendation with rationale]
+```
+
+**Three models:**
+```
+## My Analysis
+[Your assessment]
+
+## GPT's Perspective
+[Summary]
+
+## Gemini's Perspective
+[Summary]
+
+## Grok's Perspective
+[Summary]
+
+## Synthesis
+### Agreement
+[Where all align]
+
+### Divergence
+[Where they differ and why]
+
+### Recommendation
+[Final recommendation, which arguments most compelling]
 ```
 
 ## Decision Framework
@@ -103,37 +136,36 @@ Create synthesis with this structure:
 ### When Models Agree
 - High confidence in shared conclusion
 - Note if reasoning differs despite same answer
-- Your role: validate and add nuance
 
 ### When Models Disagree
-- Identify root cause (different assumptions? priorities? training data?)
-- Evaluate which reasoning is stronger for THIS context
-- Your role: break the tie with reasoned judgment
-- Grok disagreeing alone may indicate contrarian view worth considering
+- Identify root cause (assumptions? priorities? training data?)
+- Evaluate which reasoning fits THIS context
+- Your role: break tie with reasoned judgment
 
-### When You Disagree With All
+### When You Disagree
 - State your position clearly
-- Explain why their reasoning doesn't apply here
-- Be open to being wrong - they may have considered something you missed
+- Explain why their reasoning doesn't apply
+- Be open to being wrong
 
 ## NEVER
 
-- **NEVER** spawn subagents sequentially - always parallel
-- **NEVER** skip forming your own opinion first - you're the synthesizer, not just a relay
-- **NEVER** just average the answers - synthesize with judgment
+- **NEVER** spawn models not requested - respect user's choice
+- **NEVER** default to all three when user asks for one or two
+- **NEVER** spawn sequentially - always parallel
+- **NEVER** skip forming your own opinion first
+- **NEVER** just average answers - synthesize with judgment
 - **NEVER** hide disagreement - surface it explicitly
-- **NEVER** defer entirely to subagents - you own the final recommendation
-- **NEVER** spawn only 1 or 2 models - always use all three for comprehensive coverage
 
-## Example
+## Examples
 
-User: "ask gpt and gemini whether we should use monorepo or polyrepo"
+**Single model:**
+User: "ask gpt about early bird vs night owl"
+→ Spawn @gpt only, synthesize with your view
 
-**Your internal analysis**: Monorepo likely better for small team, shared code, atomic changes. Polyrepo if services truly independent.
+**Two models:**
+User: "ask gpt and gemini about monorepo vs polyrepo"
+→ Spawn @gpt + @gemini only, synthesize both with your view
 
-**Spawn parallel** (all three, even though user only mentioned two):
-- Task @gpt: "Should a 3-service backend use monorepo or polyrepo? Consider team size, deployment, code sharing."
-- Task @gemini: "Should a 3-service backend use monorepo or polyrepo? Consider team size, deployment, code sharing."
-- Task @grok: "Should a 3-service backend use monorepo or polyrepo? Consider team size, deployment, code sharing."
-
-**Synthesize**: Compare all four perspectives (yours + 3 models), note agreements/divergences, provide final recommendation with rationale.
+**All three:**
+User: "ask all three about best testing strategy"
+→ Spawn @gpt + @gemini + @grok, full synthesis
