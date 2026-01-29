@@ -3,7 +3,7 @@ description: Intelligent GPT advisory agent for deep analysis, second opinions, 
 mode: subagent
 model: opencode/gpt-5.2
 temperature: 0.3
-reasoningEffort: high
+reasoningEffort: xhigh
 tools:
   bash: true
   read: true
