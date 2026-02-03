@@ -1,41 +1,15 @@
 # Opencode config
 
-Currently testing:
+Base agent for this config is the `smart` agent based on the [Agentic Dev Starter](https://agentrules.directory/rules/bcheung/agentic-dev-starter/opencode).
 
-- [Agentic Dev Starter](https://agentrules.directory/rules/bcheung/agentic-dev-starter/opencode)
-- [Supermemory](https://supermemory.ai/) with [opencode plugin](https://github.com/supermemoryai/opencode-supermemory)
-
-## Agentic Dev Starter
-
-To use the Agentic Dev Starter use the `smart` agent.
+Memory system consists of the [Supermemory](https://supermemory.ai/) integrated via it's [opencode plugin](https://github.com/supermemoryai/opencode-supermemory).
 
 ## Supermemory
 
-To use Supermemory on a project index the codebase with `/supermemory-init`.
+To use Supermemory on a project source `SUPERMEMORY_API_KEY` into your env and index the codebase with `/supermemory-init`.
 
 ## Skills
 
-### Git submodule
+To update submodule skills run: `git submodule update --remote`
 
-- [Terraform Skill](https://github.com/antonbabenko/terraform-skill)
-
-Update them with:
-
-`git submodule update --remote`
-
-### Manual download
-
-- https://github.com/anthropics/skills/tree/main/skills/skill-creator
-
-Update them with:
-
-`./scripts/update-skills.sh`
-
-### Skills to check out
-
-- https://github.com/lackeyjb/playwright-skill
-
-## API Slugs
-
-- [Google](https://ai.google.dev/gemini-api/docs)
-- [Anthropic](https://docs.anthropic.com/en/docs/about-claude/models/overview)
+To update external skills run: `./scripts/update-skills.sh`
