@@ -1,7 +1,7 @@
 ---
 description: Writes and updates all types of documentation including READMEs, API docs, user guides, inline comments, and changelogs. Use when you need comprehensive documentation written. Do NOT use for simple inline comments or code review feedback.
 mode: subagent
-model: anthropic/claude-opus-4-6
+model: anthropic/claude-opus-4-5
 temperature: 0.1
 tools:
   bash: true

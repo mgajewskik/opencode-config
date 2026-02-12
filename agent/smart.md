@@ -1,7 +1,7 @@
 ---
 description: Intelligent agent and thinking partner. Executes tasks with thorough context gathering, or switches to mentor mode to deepen understanding through teaching and verification. Use for tasks requiring judgment, or when you want to learn and be challenged.
 mode: primary
-model: anthropic/claude-opus-4-6
+model: anthropic/claude-opus-4-5
 color: "#2482bf"
 temperature: 0.3
 tools:
