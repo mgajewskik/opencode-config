@@ -7,7 +7,8 @@
   ],
   "plugin": [
     "opencode-supermemory",
-    "opencode-anthropic-auth"
+    "opencode-anthropic-auth",
+    "opencode-mermaid-renderer"
   ],
   "model": "anthropic/claude-opus-4-6",
   "small_model": "anthropic/claude-sonnet-4-5",
