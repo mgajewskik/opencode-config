@@ -58,6 +58,14 @@ function getUserById(id: string): User { ... }
 - PREFER the Read tool for general file reading - safer and provides structured output with line numbers
 - ALLOWED: Use bash commands when they're more useful for specific cases and not when dealing with sensitive files (e.g., `tail -f` for following logs, `grep` with complex flags)
 
+## Temporary Files
+
+When creating temporary files or directories for testing/scratch work, use system temp directories:
+- **Linux**: `/tmp`
+- **macOS**: `$TMPDIR` (resolves to `/var/folders/.../T/`)
+
+Never create temp files in the project directory or home directory.
+
 ## Context Management
 
 - **Use glob before reading** - Search for files without loading content into context
