@@ -44,7 +44,7 @@ List each with brief description:
 
 ### 5. Customization
 - `AGENT_RULES.md` - Add project-specific rules
-- `agent/` - Modify subagent behavior
-- `command/` - Add or edit commands
+- `agents/` - Modify subagent behavior
+- `commands/` - Add or edit commands
 
 Keep the explanation practical and concise. Focus on how to use it, not theory.
