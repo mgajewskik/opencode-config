@@ -1,24 +1,31 @@
 import type { Plugin } from "@opencode-ai/plugin"
+import { spawn } from "bun"
 
-export const NotificationPlugin: Plugin = async ({ client, $ }) => {
+type Urgency = "low" | "normal" | "critical"
+
+const shortenPath = (path: string) =>
+  path.replace(/^\/home\/[^/]+/, "~").replace(/^\/Users\/[^/]+/, "~")
+
+export const NotificationPlugin: Plugin = ({ directory }) => {
+  const notify = (title: string, urgency: Urgency, icon: string, timeoutMs: number) => {
+    const message = shortenPath(directory)
+    if (process.platform === "darwin") {
+      spawn(["osascript", "-e", `display notification "${message}" with title "${title}"`])
+    } else if (process.platform === "linux") {
+      spawn(["notify-send", "-u", urgency, "-i", icon, "-t", String(timeoutMs), title, message])
+    }
+  }
+
   return {
-    event: async ({ event }) => {
-      // Send notification on session completion
+    event: ({ event }) => {
       if (event.type === "session.idle") {
-        const platform = process.platform
-        const cwd = process.cwd()
-        const message = `Session completed in ${cwd}`
-        
-        if (platform === "darwin") {
-          // macOS
-          await $`osascript -e 'display notification "${message}" with title "opencode"'`
-        } else if (platform === "linux") {
-          // Linux
-          await $`notify-send "opencode" "${message}"`
-        } else {
-          // Unsupported platform - could log or silently skip
-          console.warn(`Notifications not supported on platform: ${platform}`)
-        }
+        notify("opencode ✅ Done", "low", "dialog-information", 10000)
+      }
+      if (event.type === "session.error") {
+        notify("opencode ❌ Error", "critical", "dialog-error", 30000)
+      }
+      if (event.type === "permission.updated") {
+        notify(`opencode ❓ ${event.properties.title}`, "critical", "dialog-question", 30000)
       }
     },
   }
