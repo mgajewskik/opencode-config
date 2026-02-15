@@ -1,93 +1,139 @@
 ---
 name: plantuml-diagrams
-description: Create and render PlantUML diagrams with correct syntax and the plantuml CLI. Use when the user asks to "create a puml diagram", "draw a plantuml diagram", "generate puml", "visualize with plantuml", mentions "puml" or "plantuml", or asks for PlantUML-specific diagrams (sequence, class, component, deployment, activity, ER, state, mindmap, gantt, C4, AWS architecture, K8s). Do NOT trigger on generic "diagram" or "mermaid" requests — those use the mermaid-diagrams skill.
+description: Create and render PlantUML diagrams with correct syntax and the plantuml CLI. Use when the user asks to "create a puml diagram", "draw a plantuml diagram", "generate puml", "visualize with plantuml", mentions "puml" or "plantuml", or asks for PlantUML-specific diagrams (sequence, class, component, deployment, activity, ER, state, mindmap, gantt, C4, AWS architecture, K8s, use case, timing, nwdiag, network diagram, wireframe, salt mockup, archimate, EBNF grammar, regex diagram, ditaa). Do NOT trigger on generic "diagram" or "mermaid" requests — those use the mermaid-diagrams skill.
+metadata:
+  version: "2.0"
 ---
 
-## Rendering Workflow
+## Workflow
 
-1. Write diagram to a `.puml` file in the project directory
-2. Make all changes to the diagram before rendering
-3. Render with `plantuml` only when diagram is complete
-4. Open for preview with `xdg-open` (background process)
-5. Return the output file path to the user
+1. Write diagram to `.puml` file in project directory
+2. Render with `plantuml` only when diagram is complete
+3. Open preview with `xdg-open` (background process)
+4. Return output file path to user
 
 ```bash
-# Render PNG and open preview (only after all changes are done)
+# Render PNG and open preview
 plantuml -tpng diagram.puml && xdg-open diagram.png &
 
 # Other formats
-plantuml -tsvg diagram.puml
-plantuml -tpdf diagram.puml
+plantuml -tsvg diagram.puml   # SVG (scalable)
+plantuml -tpdf diagram.puml   # PDF
+plantuml -tutxt -pipe < diagram.puml  # Terminal preview (no file)
 
-# Terminal preview (no file generated, prints to stdout)
-plantuml -tutxt -pipe < diagram.puml
+# Syntax check only (no render)
+plantuml -checkonly diagram.puml
 
 # Custom output directory
-plantuml -tpng -o output_dir diagram.puml
-
-# Check syntax without rendering
-plantuml -checkonly diagram.puml
+plantuml -o output_dir diagram.puml
 ```
 
-### plantuml CLI Reference
+## Diagram Type Decision Tree
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-tpng` | PNG output | Default |
-| `-tsvg` | SVG output | |
-| `-tpdf` | PDF output | |
-| `-ttxt` | ASCII art output | |
-| `-tutxt` | Unicode ASCII art | |
-| `-pipe` | Read stdin, write stdout | |
-| `-o <dir>` | Output directory | Same as input |
-| `-theme <name>` | Apply theme | none |
-| `-darkmode` | Dark mode rendering | |
-| `-checkonly` | Syntax check only | |
-| `-v` | Verbose logging | |
-| `-nometadata` | Don't embed source in PNG | |
-
-### Smetana Fallback
-
-If Graphviz is not installed, use the built-in Java layout engine:
 ```
-!pragma layout smetana
+What are you visualizing?
+│
+├─ Interactions/flow between actors?
+│  ├─ Time-ordered messages → Sequence
+│  ├─ User goals/scenarios → Use Case
+│  └─ Precise timing constraints → Timing
+│
+├─ System structure?
+│  ├─ Code/domain model → Class
+│  ├─ Object instances → Object
+│  ├─ Database schema → IE/ER (crow's foot) or Chen ER
+│  ├─ System components → Component
+│  └─ Infrastructure/nodes → Deployment
+│
+├─ Behavior/process?
+│  ├─ Flowchart/decisions → Activity
+│  └─ State transitions → State
+│
+├─ Cloud/infrastructure?
+│  ├─ AWS/Azure/GCP → Component + stdlib (read references/cloud-architecture.md)
+│  ├─ Kubernetes → Component + K8s stdlib
+│  └─ C4 model → C4 stdlib
+│
+├─ Planning/organization?
+│  ├─ Project timeline → Gantt
+│  ├─ Topic hierarchy → Mind Map
+│  └─ Work breakdown → WBS
+│
+├─ Data visualization?
+│  ├─ Network topology → nwdiag
+│  └─ Config/data → JSON/YAML
+│
+├─ Documentation/specs?
+│  ├─ UI mockup → Salt (@startsalt)
+│  ├─ Grammar/syntax → EBNF (@startebnf)
+│  ├─ Regex pattern → Regex (@startregex)
+│  └─ ASCII art → Ditaa (@startditaa)
+│
+└─ Enterprise architecture?
+   └─ ArchiMate model → Archimate
 ```
-Add at top of `.puml` file. Works for most diagram types except some edge cases.
 
-## Diagram Strategy
+## Quick Reference
 
-Before generating, consider:
-- **Audience**: Engineers → Class/Sequence/Component/ER. Stakeholders → Activity/MindMap/Gantt.
-- **Complexity**: >15 nodes → split into multiple diagrams or use packages/groups.
-- **Direction**: `left to right direction` for wide diagrams. Default is top-down.
-- **Cloud/K8s**: Read [references/cloud-architecture.md](references/cloud-architecture.md) for AWS, Azure, GCP, K8s, C4 patterns.
-
-## Diagram Type Selection
-
-| Need | Diagram Type | Start Tag |
-|------|-------------|-----------|
+| Need | Type | Start Tag |
+|------|------|-----------|
 | API calls, service interactions | Sequence | `@startuml` |
+| User goals, scenarios | Use Case | `@startuml` |
 | OOP design, domain models | Class | `@startuml` |
 | Database schema (crow's foot) | IE/ER | `@startuml` |
 | Database schema (Chen notation) | ER | `@startchen` |
 | Process flow, decisions | Activity | `@startuml` |
-| System architecture, packages | Component | `@startuml` |
+| System architecture | Component | `@startuml` |
 | Infrastructure, nodes | Deployment | `@startuml` |
-| AWS/Azure/GCP architecture | Component + stdlib | `@startuml` |
-| K8s cluster layout | Component + stdlib | `@startuml` |
-| C4 model (context/container) | C4 + stdlib | `@startuml` |
 | State machines | State | `@startuml` |
-| Object instances | Object | `@startuml` |
-| Topic hierarchy, brainstorm | Mind Map | `@startmindmap` |
-| Project breakdown | WBS | `@startwbs` |
+| Precise timing | Timing | `@startuml` |
+| AWS/Azure/GCP | Component + stdlib | `@startuml` |
+| K8s cluster | Component + stdlib | `@startuml` |
+| C4 model | C4 stdlib | `@startuml` |
+| Topic hierarchy | Mind Map | `@startmindmap` |
+| Work breakdown | WBS | `@startwbs` |
 | Project timeline | Gantt | `@startgantt` |
 | Network topology | nwdiag | `@startuml` |
-| Data visualization | JSON/YAML | `@startjson` / `@startyaml` |
+| JSON/YAML data | JSON/YAML | `@startjson` / `@startyaml` |
+| UI mockup/wireframe | Salt | `@startsalt` |
+| Grammar/syntax | EBNF | `@startebnf` |
+| Regex visualization | Regex | `@startregex` |
+| ASCII art conversion | Ditaa | `@startditaa` |
+| Enterprise architecture | Archimate | `@startuml` + include |
 
-For cloud/K8s/C4 diagrams: **MANDATORY** read [references/cloud-architecture.md](references/cloud-architecture.md).
-For diagram types beyond the quick syntax below: read [references/extra-diagrams.md](references/extra-diagrams.md).
+**For cloud/K8s/C4:** Read [references/cloud-architecture.md](references/cloud-architecture.md)
+**For extra types:** Read [references/extra-diagrams.md](references/extra-diagrams.md)
 
-## Quick Syntax — Core Types
+## CLI Reference
+
+| Flag | Description |
+|------|-------------|
+| `-tpng` | PNG output (default) |
+| `-tsvg` | SVG output |
+| `-tpdf` | PDF output (requires Apache Batik) |
+| `-ttxt` | ASCII art (outputs `.atxt`) |
+| `-tutxt` | Unicode ASCII (outputs `.utxt`) |
+| `-pipe` | Read stdin, write stdout |
+| `-o <dir>` | Output directory |
+| `-theme <name>` | Apply theme |
+| `--dark-mode` | Dark mode rendering |
+| `-checkonly` | Syntax check only |
+| `--check-graphviz` | Check Graphviz installation |
+| `--disable-metadata` | Don't embed source in PNG |
+| `-Playout=smetana` | Use Smetana layout engine |
+| `-Playout=elk` | Use ELK layout engine |
+| `-Pteoz=true` | Use Teoz engine for sequence diagrams |
+
+### Layout Engines
+
+| Engine | Use Case | Pragma |
+|--------|----------|--------|
+| Graphviz | Default, best for most diagrams | (default) |
+| Smetana | Java port, no Graphviz needed | `!pragma layout smetana` |
+| ELK | Orthogonal layout only | `!pragma layout elk` |
+| Teoz | Sequence diagrams with anchors/duration | `!pragma teoz true` |
+
+## Core Syntax
 
 ### Sequence Diagram
 
@@ -113,17 +159,17 @@ User -> API: GET /data
 @enduml
 ```
 
-**Participants**: `participant`, `actor`, `boundary`, `control`, `entity`, `database`, `collections`, `queue`
+**Participants:** `participant`, `actor`, `boundary`, `control`, `entity`, `database`, `collections`, `queue`
 
-**Arrows**: `->` solid, `-->` dotted, `->x` lost, `<->` bidirectional, `-[#red]->` colored
+**Arrows:** `->` solid, `-->` dotted, `->x` lost, `<->` bidirectional, `-[#red]->` colored
 
-**Activation**: `-> Target ++:` activate, `--> Source --:` deactivate, or explicit `activate`/`deactivate`
+**Activation:** `-> Target ++:` activate, `--> Source --:` deactivate
 
-**Grouping**: `alt/else`, `opt`, `loop`, `par/and`, `break`, `critical`, `group` — all close with `end`
+**Grouping:** `alt/else`, `opt`, `loop`, `par/else`, `break`, `critical`, `group` — close with `end`
 
-**Notes**: `note left of A: text`, `note right of A: text`, `note over A,B: text`
+**Notes:** `note left of A:`, `note right of A:`, `note over A,B:`
 
-**Other**: `autonumber`, `== Divider ==`, `...delay...`, `|||` extra space, `box "Group" ... end box`
+**Other:** `autonumber`, `== Divider ==`, `...delay...`, `|||` space, `box "Group" ... end box`
 
 ### Class / ER Diagram
 
@@ -152,20 +198,15 @@ Order ..|> Payable
 @enduml
 ```
 
-**Visibility**: `+` public, `-` private, `#` protected, `~` package
+**Visibility:** `+` public, `-` private, `#` protected, `~` package
 
-**Modifiers**: `{static}`, `{abstract}`
+**Modifiers:** `{static}`, `{abstract}`
 
-**Relationships**:
-- `<|--` inheritance, `<|..` realization
-- `*--` composition, `o--` aggregation
-- `-->` association, `..>` dependency
+**Relationships:** `<|--` inheritance, `<|..` realization, `*--` composition, `o--` aggregation, `-->` association, `..>` dependency
 
-**Cardinality**: `"1" --> "*"`, `"0..1"`, `"1..*"`
+**Cardinality:** `"1" --> "*"`, `"0..1"`, `"1..*"`
 
-**Packages**: `package Name { }`, **Stereotypes**: `<<Interface>>`, `<<Abstract>>`, `<<Enumeration>>`
-
-#### IE/ER (Crow's Foot)
+### IE/ER (Crow's Foot)
 
 ```
 @startuml
@@ -190,15 +231,13 @@ Customer ||--o{ Order : places
 @enduml
 ```
 
-**Cardinality**: `||` exactly one, `o|` zero or one, `}|` one or more, `o{` zero or more
+**Cardinality:** `||` exactly one, `o|` zero or one, `}|` one or more, `o{` zero or more
 
-**Line**: `--` solid (identifying), `..` dashed (non-identifying)
+**Line:** `--` solid (identifying), `..` dashed (non-identifying)
 
-**Attributes**: `*` mandatory, `<<PK>>`, `<<FK>>`
+**Attributes:** `*` mandatory, `<<PK>>`, `<<FK>>`
 
-**IMPORTANT**: Always use `skinparam linetype ortho` for clean crow's feet rendering.
-
-### Activity Diagram (Flowchart)
+### Activity Diagram
 
 ```
 @startuml
@@ -220,23 +259,51 @@ stop
 @enduml
 ```
 
-**Actions**: `:text;` — MUST end with `;`
+**Actions:** `:text;` — MUST end with `;`
 
-**Conditionals**: `if (cond?) then (yes) ... else (no) ... endif`
+**Conditionals:** `if (cond?) then (yes) ... else (no) ... endif`
 
-**Switch**: `switch (test?) case (A) ... case (B) ... endswitch`
+**Switch:** `switch (test?) case (A) ... case (B) ... endswitch`
 
-**Loops**: `while (cond?) ... endwhile`, `repeat ... repeat while (cond?)`
+**Loops:** `while (cond?) ... endwhile`, `repeat ... repeat while (cond?)`
 
-**Parallel**: `fork ... fork again ... end fork`
+**Parallel:** `fork ... fork again ... end fork`
 
-**Swimlanes**: `|Lane Name|` before actions
+**Swimlanes:** `|Lane Name|` before actions
 
-**Colors**: `:action; #LightBlue`
+**Kill/Detach:** `kill` (X end), `detach` (arrow end)
 
-**Kill/Detach**: `kill` (X end), `detach` (arrow end)
+### Use Case Diagram
 
-### Component / Deployment Diagram
+```
+@startuml
+left to right direction
+
+actor Customer
+actor Admin
+
+rectangle "E-Commerce" {
+  usecase "Browse Products" as UC1
+  usecase "Place Order" as UC2
+  usecase "Manage Inventory" as UC3
+}
+
+Customer --> UC1
+Customer --> UC2
+Admin --> UC3
+UC2 ..> UC1 : <<include>>
+@enduml
+```
+
+**Actors:** `actor Name`, `:Name:` (stick figure)
+
+**Use cases:** `usecase "Name"`, `(Name)`
+
+**Relationships:** `-->` association, `..>` include/extend, `--|>` generalization
+
+**Stereotypes:** `<<include>>`, `<<extend>>`
+
+### Component / Deployment
 
 ```
 @startuml
@@ -252,65 +319,147 @@ cloud "Cloud" {
   }
   database "PostgreSQL" {
     [Users DB]
-    [Orders DB]
   }
 }
 
 [Web App] --> [REST API] : HTTPS
-[Mobile App] --> [REST API] : HTTPS
 [REST API] --> [Auth Service]
 [REST API] --> [Users DB]
-[REST API] --> [Orders DB]
 @enduml
 ```
 
-**Components**: `[Name]` or `component "Name" as alias`
+**Components:** `[Name]`, `component "Name" as alias`
 
-**Interfaces**: `() "Name"` or `interface Name`
+**Interfaces:** `() "Name"`, `interface Name`
 
-**Grouping**: `package`, `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`, `storage`, `queue`
+**Grouping:** `package`, `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`, `storage`, `queue`
 
-**Connections**: `-->` arrow, `..>` dotted arrow, `--` line, `..` dotted line
+### Timing Diagram
 
-**Ports**: `portin p1`, `portout p2` inside component blocks
+```
+@startuml
+robust "Web Browser" as WB
+concise "Web User" as WU
 
-**Styled connections**: `-[#red,dashed,thickness=2]->`
+@0
+WU is Idle
+WB is Idle
+
+@100
+WU is Waiting
+WB is Processing
+
+@300
+WB is Waiting
+@enduml
+```
+
+**Participants:** `robust` (multiple states), `concise` (simple states), `clock`
+
+**States:** `@<time>` then `<participant> is <state>`
+
+**Constraints:** `@<time> <-> @<time> : label`
 
 ## Theming
 
 ```
 @startuml
 !theme spacelab
-' or: !theme cerulean, vibrant, materia, bluegray, amiga, hacker
+' Available: cerulean, vibrant, materia, bluegray, amiga, hacker
 ```
 
 CLI: `plantuml -theme spacelab diagram.puml`
 
 Key skinparams:
 ```
-skinparam backgroundColor white
+skinparam backgroundColor white  ' themes may set transparent - override explicitly
 skinparam monochrome true
 skinparam shadowing false
 skinparam defaultFontName "Helvetica"
-skinparam class {
-  BackgroundColor PaleGreen
-  BorderColor DarkGreen
-}
+skinparam linetype ortho
 ```
 
-List all themes: `!theme _` generates error listing available themes.
+List themes: `plantuml -help` shows available themes, or check https://the-lum.github.io/puml-themes-gallery/
+
+## Failure Modes
+
+| Scenario | Detection | Fallback |
+|----------|-----------|----------|
+| Graphviz not installed | `plantuml --check-graphviz` fails | Add `!pragma layout smetana` at top |
+| Syntax error | `plantuml -checkonly` returns error | Check NEVER list, fix syntax |
+| Crow's feet render poorly | Angled lines look wrong | Add `skinparam linetype ortho` |
+| Diagram too large | Output truncated or slow | Split into multiple diagrams, use packages |
+| AWS icons not found | Include path error | Use `awslib14` not `awslib`, check category names |
+| Mind map renders as class | Wrong diagram type | Use `@startmindmap` not `@startuml` |
+| Gantt dates wrong | Tasks overlap incorrectly | Check `Project starts` date, verify closed days |
+| C4 macros not found | Include error | Verify `!include <C4/C4_Container>` path |
+| K8s sprites missing | Sprite not rendered | Check `!include <kubernetes/k8s-sprites-unlabeled-25pct>` |
+| Salt wireframe broken | Elements misaligned | Check brace matching, column separators `|` |
+
+**When in doubt:**
+- Run `plantuml -checkonly` before rendering
+- Check the NEVER list for common mistakes
+- Use `skinparam linetype ortho` for ER diagrams
 
 ## NEVER
 
-- NEVER use `<awslib/NetworkingAndContentDelivery/...>` — the correct category is `NetworkingContentDelivery` (without "And")
-- NEVER use `<awslib/...>` without `!include <awslib/AWSCommon>` first (or `awslib14`, `awslib20`)
+**Syntax errors:**
 - NEVER forget `;` at end of activity diagram actions — `:text;` not `:text`
 - NEVER use `@startuml` for mindmap/WBS/gantt — use `@startmindmap`, `@startwbs`, `@startgantt`
 - NEVER use `end` as a node/state name — reserved keyword, use `End` or `Finish`
 - NEVER skip `then` keyword in activity `if` statements
-- NEVER use deprecated `!define` — use `!$var = value`
 - NEVER forget `end` to close grouping blocks (alt, loop, opt, par, etc.)
-- NEVER render without writing to `.puml` file first — always write file, then render
-- NEVER assume crow's feet render well without `skinparam linetype ortho`
 - NEVER use spaces in participant/class names without quotes — use `"Long Name" as alias`
 - NEVER use `graph` keyword — PlantUML uses `@startuml` not `graph`
+
+**AWS/Cloud errors:**
+- NEVER use `<awslib/NetworkingAndContentDelivery/...>` — correct is `NetworkingContentDelivery` (no "And")
+- NEVER use `<awslib/...>` without `!include <awslib/AWSCommon>` first
+- NEVER use deprecated `!define` — use `!$var = value`
+
+**Rendering errors:**
+- NEVER assume crow's feet render well without `skinparam linetype ortho`
+- NEVER render without writing to `.puml` file first — always write file, then render
+
+**Sequence diagram errors:**
+- NEVER use `par/and` syntax — use `par/else` for parallel threads
+- NEVER use `activate`/`deactivate` without matching pairs
+- NEVER forget to close `box ... end box` groups
+
+**Class diagram errors:**
+- NEVER use `extends` with interface — use `implements` or `<|..`
+- NEVER mix `--` and `-` inconsistently for relationship length
+
+**Activity diagram errors:**
+- NEVER use `if` without `endif`
+- NEVER use `fork` without `end fork`
+- NEVER forget parentheses in conditions: `if (condition?) then (yes)`
+
+**Mind Map/WBS errors:**
+- NEVER use `@startuml` for mindmap — use `@startmindmap`
+- NEVER use `@startuml` for WBS — use `@startwbs`
+- NEVER mix `+` and `-` depth markers inconsistently in same branch
+
+**Gantt errors:**
+- NEVER forget `Project starts YYYY-MM-DD` — required for date-based tasks
+- NEVER use `[Task] starts [Other]'s end` — correct is `starts at [Other]'s end`
+
+**Salt/Wireframe errors:**
+- NEVER use `@startuml` for wireframes — use `@startsalt`
+- NEVER forget closing braces `}` for salt containers
+
+**Chen ER errors:**
+- NEVER use `@startuml` for Chen notation — use `@startchen`
+
+**EBNF/Regex errors:**
+- NEVER use `@startuml` for EBNF — use `@startebnf`
+- NEVER use `@startuml` for regex — use `@startregex`
+
+## ALWAYS
+
+- ALWAYS write `.puml` file before rendering
+- ALWAYS use `skinparam linetype ortho` for ER/IE diagrams
+- ALWAYS include `AWSCommon` before other AWS includes
+- ALWAYS use quotes for names with spaces: `"My Service" as svc`
+- ALWAYS end activity actions with semicolon: `:action;`
+- ALWAYS close grouping blocks: `alt/else/end`, `if/endif`, `fork/end fork`

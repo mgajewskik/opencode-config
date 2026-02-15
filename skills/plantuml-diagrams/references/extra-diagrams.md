@@ -1,5 +1,130 @@
 # Extra Diagram Types
 
+## Use Case Diagram
+
+```
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor Customer
+actor Admin
+actor "Payment System" as PS <<system>>
+
+rectangle "E-Commerce Platform" {
+  usecase "Browse Products" as UC1
+  usecase "Search Products" as UC2
+  usecase "Add to Cart" as UC3
+  usecase "Checkout" as UC4
+  usecase "Process Payment" as UC5
+  usecase "Manage Inventory" as UC6
+  usecase "View Reports" as UC7
+}
+
+Customer --> UC1
+Customer --> UC2
+Customer --> UC3
+Customer --> UC4
+UC4 ..> UC5 : <<include>>
+UC5 --> PS
+
+Admin --> UC6
+Admin --> UC7
+UC1 <.. UC2 : <<extend>>
+@enduml
+```
+
+**Actors**: `actor Name`, `:Name:` (stick figure), `actor Name <<system>>` (non-human)
+
+**Use cases**: `usecase "Name"`, `(Name)`, `usecase "Name" as alias`
+
+**Relationships**:
+- `-->` association (actor to use case)
+- `..>` include/extend (use case to use case)
+- `--|>` generalization (actor inheritance)
+
+**Stereotypes**: `<<include>>`, `<<extend>>`, `<<system>>`
+
+**Grouping**: `rectangle "System Name" { ... }`
+
+**Direction**: `left to right direction` for horizontal layout
+
+**Notes**: `note right of UC1: Description`
+
+## Timing Diagram
+
+```
+@startuml
+robust "Web Browser" as WB
+concise "Web User" as WU
+clock "Clock" as C
+
+@0
+WU is Idle
+WB is Idle
+
+@100
+WU -> WB : URL
+WU is Waiting
+WB is Processing
+
+@300
+WB is Waiting
+
+@400
+WB -> WU : Page
+WU is ok
+WB is Idle
+
+@500
+WU is Idle
+
+highlight 100 to 300 #Gold : Critical
+@enduml
+```
+
+**Participant types**:
+- `robust "Name"` — multiple named states, thick bar
+- `concise "Name"` — simple states, thin line
+- `clock "Name"` — clock signal
+- `binary "Name"` — binary (high/low) signal
+
+**State changes**: `@<time>` then `<participant> is <state>`
+
+**Messages**: `A -> B : message` at specific time
+
+**Constraints**: `@<time> <-> @<time> : label` (duration)
+
+**Highlighting**: `highlight <start> to <end> #color : label`
+
+**Relative time**: `@+100` (100 units after previous)
+
+**Hidden state**: `<participant> is {hidden}` to hide lifeline
+
+### Binary/Clock Example
+
+```
+@startuml
+clock "Clock" as C with period 50
+binary "Enable" as EN
+concise "Output" as OUT
+
+@0
+EN is low
+OUT is Idle
+
+@100
+EN is high
+
+@150
+OUT is Active
+
+@300
+EN is low
+OUT is Idle
+@enduml
+```
+
 ## State Diagram
 
 ```
@@ -357,3 +482,118 @@ $service("DB", "PostgreSQL")
 ### Builtin Functions
 
 `%date()`, `%now()`, `%strlen()`, `%substr()`, `%upper()`, `%lower()`, `%get_all_theme()`, `%load_json()`
+
+## Archimate Diagram
+
+```
+@startuml
+!include <archimate/Archimate>
+
+Business_Actor(customer, "Customer")
+Business_Process(order, "Order Process")
+Business_Service(payment, "Payment Service")
+
+Application_Component(webapp, "Web Application")
+Application_Service(api, "REST API")
+
+Technology_Node(server, "Application Server")
+Technology_Artifact(db, "Database")
+
+Rel_Serving(api, order, "supports")
+Rel_Realization(webapp, api, "realizes")
+Rel_Assignment(server, webapp, "runs")
+@enduml
+```
+
+**Layers**: Business, Application, Technology, Motivation, Strategy, Implementation
+
+**Elements**: `<Layer>_<Type>(alias, "Label")`
+- Business: `Business_Actor`, `Business_Process`, `Business_Service`, `Business_Object`
+- Application: `Application_Component`, `Application_Service`, `Application_Interface`
+- Technology: `Technology_Node`, `Technology_Artifact`, `Technology_Service`
+
+**Relationships**: `Rel_<Type>(from, to, "label")`
+- `Rel_Serving`, `Rel_Realization`, `Rel_Assignment`, `Rel_Composition`
+- `Rel_Aggregation`, `Rel_Access`, `Rel_Influence`, `Rel_Triggering`
+
+## EBNF Diagram
+
+```
+@startebnf
+title JSON Grammar
+
+json = object | array;
+object = "{", [ pair, { ",", pair } ], "}";
+pair = string, ":", value;
+array = "[", [ value, { ",", value } ], "]";
+value = string | number | object | array | "true" | "false" | "null";
+string = '"', { character }, '"';
+number = [ "-" ], digit, { digit }, [ ".", { digit } ];
+@endebnf
+```
+
+**Syntax**:
+- `=` definition
+- `;` end of rule
+- `|` alternation (or)
+- `,` concatenation (sequence)
+- `{ }` repetition (zero or more)
+- `[ ]` optional (zero or one)
+- `( )` grouping
+- `" "` terminal (literal)
+
+## Regex Diagram
+
+```
+@startregex
+title Email Pattern
+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+@endregex
+```
+
+Visualizes regular expressions as railroad diagrams.
+
+## Salt (Wireframe/UI Mockup)
+
+```
+@startsalt
+{
+  Login Form
+  ==
+  Username: | "user@example.com"
+  Password: | "****"
+  [X] Remember me
+  --
+  [  Cancel  ] | [  Login  ]
+}
+@endsalt
+```
+
+**Elements**:
+- `|` column separator
+- `--` horizontal line
+- `==` double line
+- `[ ]` button
+- `[X]` checkbox (checked)
+- `( )` radio button
+- `"text"` text field
+- `^dropdown^` dropdown
+- `{T` table start, `}` table end
+
+## Ditaa Diagram
+
+```
+@startditaa
++--------+   +-------+    +-------+
+|        | --+ ditaa +--> |       |
+|  Text  |   +-------+    |diagram|
+|Document|   |!magic!|    |       |
+|     {d}|   |       |    |       |
++---+----+   +-------+    +-------+
+    :                         ^
+    |       Lots of work      |
+    +-------------------------+
+@endditaa
+```
+
+ASCII art to diagram conversion. Uses `{d}` for document shape, `{s}` for storage, `{io}` for I/O.
