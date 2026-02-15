@@ -88,3 +88,24 @@ Do NOT auto-stage, commit, or push changes. Only use read-only git commands:
 **Why:** Users need full control over version control. Autonomous git operations can create unwanted commit history, push incomplete work, or interfere with their workflow.
 
 When work is complete, inform the user that changes are ready. Let them decide when to commit.
+
+## External Dependencies and Scripts
+
+**NEVER download or install packages without explicit user approval.**
+
+Before suggesting any installation or download:
+1. **ASK FIRST** - Always confirm with user before running install commands
+2. **NO curl|sh patterns** - Never suggest piping curl/wget to shell (curl | sh, curl | bash)
+3. **NO automatic installs** - Do not run npm install, pip install, apt install, brew install, etc. without user confirmation
+4. **Prefer system package managers** - Suggest pacman, mise, or other user-preferred tools over curl scripts
+
+**Forbidden patterns:**
+- `curl ... | sh` or `curl ... | bash`
+- `wget ... | sh`
+- Any remote script execution without user review
+- Automatic package installation
+
+**Required workflow:**
+1. Identify needed dependency
+2. Ask user: "This requires [tool]. Install via pacman/mise, or should I suggest alternatives?"
+3. Wait for user confirmation before proceeding
