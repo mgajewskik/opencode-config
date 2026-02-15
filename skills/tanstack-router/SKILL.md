@@ -1,5 +1,5 @@
 ---
-name: TanStack Router
+name: tanstack-router
 description: |
   Build type-safe, file-based React routing with TanStack Router. Supports client-side navigation, route loaders, and TanStack Query integration. Prevents 20 documented errors including validation structure loss, param parsing bugs, and SSR streaming crashes.
 

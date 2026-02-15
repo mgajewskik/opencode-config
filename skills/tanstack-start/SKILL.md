@@ -1,5 +1,5 @@
 ---
-name: TanStack Start
+name: tanstack-start
 description: |
   Build full-stack React apps with TanStack Start on Cloudflare Workers. Type-safe routing, server functions, SSR/streaming, D1/KV/R2 integration.
 
