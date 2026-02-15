@@ -49,26 +49,10 @@ Comprehensive guide to using uv, an extremely fast Python package installer and 
 - **vs poetry**: Faster, less opinionated, lighter
 - **vs conda**: Faster, Python-focused
 
-## Installation
+## Prerequisites
 
-### Quick Install
-
-```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Windows (PowerShell)
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Using pip (if you already have Python)
-pip install uv
-
-# Using Homebrew (macOS)
-brew install uv
-
-# Using cargo (if you have Rust)
-cargo install --git https://github.com/astral-sh/uv uv
-```
+Install uv via your system package manager (pacman, mise, etc.) before using this skill.
+Do NOT use curl|sh installation patterns.
 
 ### Verify Installation
 

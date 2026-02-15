@@ -47,7 +47,8 @@ SKILLS=(
 	"https://github.com/wshobson/agents/tree/main/plugins/python-development/skills/python-packaging"
 	"https://github.com/wshobson/agents/tree/main/plugins/python-development/skills/python-performance-optimization"
 	"https://github.com/wshobson/agents/tree/main/plugins/python-development/skills/python-testing-patterns"
-	"https://github.com/wshobson/agents/tree/main/plugins/python-development/skills/uv-package-manager"
+	# REMOVED: uv-package-manager - contains curl|sh patterns, manually maintained
+	# "https://github.com/wshobson/agents/tree/main/plugins/python-development/skills/uv-package-manager"
 	"https://github.com/wshobson/agents/tree/main/plugins/cicd-automation/skills/github-actions-templates"
 	"https://github.com/wshobson/agents/tree/main/plugins/cicd-automation/skills/gitlab-ci-patterns"
 	"https://github.com/wshobson/agents/tree/main/plugins/cicd-automation/skills/deployment-pipeline-design"
@@ -55,7 +56,8 @@ SKILLS=(
 	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/cost-optimization"
 	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/hybrid-cloud-networking"
 	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/istio-traffic-management"
-	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/linkerd-patterns"
+	# REMOVED: linkerd-patterns - contains curl|sh patterns, deleted
+	# "https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/linkerd-patterns"
 	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/mtls-configuration"
 	"https://github.com/wshobson/agents/tree/main/plugins/cloud-infrastructure/skills/service-mesh-observability"
 	"https://github.com/wshobson/agents/tree/main/plugins/data-engineering/skills/airflow-dag-patterns"
@@ -71,7 +73,8 @@ SKILLS=(
 	"https://github.com/wshobson/agents/tree/main/plugins/shell-scripting/skills/bats-testing-patterns"
 	"https://github.com/wshobson/agents/tree/main/plugins/shell-scripting/skills/shellcheck-configuration"
 	"https://github.com/wshobson/agents/tree/main/plugins/systems-programming/skills/go-concurrency-patterns"
-	"https://github.com/wshobson/agents/tree/main/plugins/kubernetes-operations/skills/gitops-workflow"
+	# REMOVED: gitops-workflow - contains curl|sudo bash patterns, manually maintained
+	# "https://github.com/wshobson/agents/tree/main/plugins/kubernetes-operations/skills/gitops-workflow"
 	"https://github.com/wshobson/agents/tree/main/plugins/kubernetes-operations/skills/helm-chart-scaffolding"
 	"https://github.com/wshobson/agents/tree/main/plugins/kubernetes-operations/skills/k8s-manifest-generator"
 	"https://github.com/wshobson/agents/tree/main/plugins/kubernetes-operations/skills/k8s-security-policies"

@@ -36,6 +36,8 @@ Implement declarative, Git-based continuous delivery for Kubernetes using ArgoCD
 kubectl create namespace argocd
 
 # Install ArgoCD
+# WARNING: Review manifest before applying from remote URL
+# Download and inspect: curl -o argocd-install.yaml https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # Get admin password
@@ -116,8 +118,8 @@ spec:
 ### 1. Installation
 
 ```bash
-# Install Flux CLI
-curl -s https://fluxcd.io/install.sh | sudo bash
+# Install Flux CLI via your system package manager (pacman, mise, etc.)
+# Do NOT use curl|sh installation patterns
 
 # Bootstrap Flux
 flux bootstrap github \
