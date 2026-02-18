@@ -1,7 +1,9 @@
 ---
 description: Makes focused code changes to a single file. Use for parallel edits when changes are repetitive and isolated (e.g., updating imports across 5 files). Do NOT use when changes depend on each other, when editing fewer than 3 files, or for complex logic requiring deep context.
 mode: subagent
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
+thinking:
+  type: adaptive
 temperature: 0.1
 tools:
   bash: true
