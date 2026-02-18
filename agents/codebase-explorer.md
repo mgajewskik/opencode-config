@@ -1,7 +1,9 @@
 ---
 description: Finds files, locates code patterns, and analyzes how existing code works. Use when you need to understand the codebase (find similar implementations, locate files, trace data flow). Do NOT use for external documentation/web research, making code changes, or when you already know the exact file path.
 mode: subagent
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
+thinking:
+  type: adaptive
 temperature: 0.1
 tools:
   bash: false
