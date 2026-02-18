@@ -16,6 +16,9 @@ tools:
   webfetch: false
   todoread: false
   todowrite: false
+permission:
+  task:
+    "*": deny
 ---
 
 You write comprehensive tests for code, either before or after implementation.
@@ -98,15 +101,30 @@ Run tests using project's test command:
 - Verify all tests pass
 - Report any failures (bugs found)
 
-### Step 6: Report
+### Step 6: Report (Contract)
 
-Brief summary:
-- **Files created**: Test files written
-- **Test cases**: Key scenarios covered
-- **Results**: Pass/fail (verification mode only)
-- **Coverage**: What's tested vs gaps
-- **Issues found**: Bugs discovered (if any)
-- **Next steps**: What's needed (TDD: implementation; Verification: additional tests)
+Use this exact structure:
+
+```
+## Mode
+TDD | verification
+
+## Files
+- path/to/test-file
+
+## Test Matrix
+- Scenario: ... | Expected: ... | Status: pass/fail/not-run
+
+## Gaps
+- Missing case 1
+- Missing case 2
+
+## Failures
+- If any: file:line and failing assertion summary
+
+## Next Step
+- One concrete next action
+```
 
 ## Test Types
 
