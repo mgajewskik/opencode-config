@@ -78,6 +78,13 @@ Always structure your response with these exact sections:
 ## Confidence
 [high/medium/low] - [what would change confidence]
 
+## Risks / Edge Cases
+- [risk + concrete trigger condition]
+- [risk + concrete trigger condition]
+
+## What Would Change My Recommendation
+- [specific evidence or condition]
+
 ## Sources/References
 [Skills loaded, URLs fetched, files read, or "None - based on training knowledge"]
 

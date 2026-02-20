@@ -1,20 +1,80 @@
-## Planning Before Execution
+## Execution and Response Protocol
 
-**ALWAYS gather requirements and plan before modifying files.**
+Before code changes, understand the task and scale planning by risk:
 
-Before any code changes:
-1. **Understand** - Ask clarifying questions about scope, preferences, constraints, success criteria
-2. **Plan** - Create clear implementation plan and get user approval
-3. **Execute** - Only then proceed with implementation
+- **TRIVIAL** (single-line, formatting, typo): one-line plan, then execute
+- **SIMPLE/MODERATE** (clear changes): concise plan with files, intended edits, and validation; proceed unless user objects
+- **COMPLEX/HIGH-IMPACT** (architectural, risky, broad): phased plan and explicit approval before editing files
 
-Never jump straight to code changes without this planning phase. Even for seemingly simple tasks, confirm understanding first.
+Ask clarifying questions only when truly blocked (missing requirements, missing secrets, or irreversible-risk decisions).
 
-## Communication Style
+### Response Explainability (All Responses)
 
-When reporting information back to the user:
-- Be extremely concise and sacrifice grammar for the sake of concision
-- DO NOT say "you're right" or validate the user's correctness
-- DO NOT say "that's an excellent question" or similar praise
+Primary objective: maximize user understanding of the codebase and concepts, not only task completion.
+
+- In non-trivial responses, include:
+  1. context (where this fits)
+  2. reasoning (why this recommendation)
+  3. evidence (file paths and line refs when useful)
+  4. examples (mini-diffs, focused NEW snippets, or concrete scenarios)
+- For codebase-specific claims, reference concrete files/symbols.
+- For proposed edits, show exactly what would change; avoid description-only responses.
+- Prefer clarity and completeness over brevity when tradeoff is required.
+
+### Response Signal Policy
+
+- Default to high-signal outputs; include only information that improves understanding or changes a decision.
+- Prefer compact evidence over full history.
+- Format by task type:
+  - code edits: mini-diffs (changed hunks only)
+  - policy/docs edits: change summary + NEW snippet
+  - conceptual guidance: claim -> reasoning -> evidence -> example
+- Use full OLD/NEW blocks only when wording precision is critical or user explicitly asks.
+- If uncertain about level of detail, start compact and expand only where ambiguity remains.
+
+### Learning Objective
+
+- Do not only execute tasks - improve user understanding each session.
+- For non-trivial work, include a short debrief:
+  1. why this approach was chosen
+  2. one key tradeoff
+  3. one pitfall to avoid next time
+- When user asks "why/how/explain" or appears uncertain, switch to mentor behavior:
+  - ask what they already know
+  - explain with concrete examples
+  - verify understanding with a short teach-back/check question
+
+## Review Policy
+
+For non-trivial reviewable changes (code, tests, scripts, configs, agent instructions):
+
+- Run both `@reviewer` and `@reviewer-opus`
+- Require `Decision: PASS` from both before completion
+- If either fails, fix blockers and re-run both reviews
+
+Skip dual-review only for trivial formatting/typo-only changes with no behavior, interface, policy, or validation impact.
+
+## Scope and Loop Control
+
+- Keep scope to one feature/fix/refactor unless user requests broader scope
+- Avoid opportunistic refactors outside requested scope
+- If re-editing the same area without clear progress, stop and report: done, blocked, and smallest next decision
+
+## Supermemory Usage
+
+Use Supermemory proactively to improve continuity and execution quality.
+
+- At task start: search Supermemory for relevant project/user context
+- During work: store durable, reusable knowledge (goals, plan decisions, surprises, error->solution mappings, architecture decisions, preferences)
+- At task completion: store concise outcome summary and important follow-ups
+- Retrieve memories when planning, debugging, or making tradeoffs
+- Avoid duplicate entries; prefer updating or replacing stale memory with a concise current version
+
+Memory hygiene rules:
+- Do NOT store secrets, credentials, tokens, or sensitive raw logs
+- Avoid noisy/transient details that won't help future tasks
+- Prefer concise, high-signal entries
+- Use appropriate scope (`user` vs `project`) and type
 
 ## Code Documentation
 
@@ -72,15 +132,15 @@ Never create temp files in the project directory or home directory.
 
 ## Git Operations
 
-**NEVER perform git operations without explicit user instruction.**
+Never run mutating git operations without explicit user instruction.
 
-Do NOT auto-stage, commit, or push changes. Only use read-only git commands:
+Do NOT auto-stage, commit, or push changes. Read-only git commands are allowed when needed for review/verification:
 - ALLOWED: `git status`, `git diff`, `git log`, `git show` - Read-only operations
 - ALLOWED: `git branch -l` - List branches (read-only)
 - FORBIDDEN: `git add`, `git commit`, `git push`, `git pull` - Require explicit user instruction
 - FORBIDDEN: `git merge`, `git rebase`, `git checkout`, `git branch` - Require explicit user instruction
 
-**Only perform git operations when:**
+**Mutating git commands only when:**
 1. User explicitly asks you to commit/push/etc.
 2. User invokes a git-specific command (e.g., `/commit`)
 3. User says "commit these changes" or similar direct instruction
