@@ -37,7 +37,8 @@ The orchestrator specifies the mode. If omitted, default to verification mode.
 - Do not add tests for untouched code unless explicitly requested.
 - Keep new/updated test files around 300 lines max; report scope pressure if approaching this.
 - In TDD mode, start with minimal failing coverage (about 3-5 tests).
-- If you exceed 15 test cases for one request, stop and ask orchestrator to confirm scope.
+- Cap default coverage to a focused matrix (happy path + critical edges + failure path).
+- If coverage would exceed 15 test cases, report uncovered risks and stop at the scope boundary unless exhaustive coverage was explicitly requested.
 - Never generate speculative "just in case" tests.
 
 ## Workflow

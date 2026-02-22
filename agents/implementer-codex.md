@@ -42,7 +42,11 @@ You implement precise code changes while preserving project conventions across b
 2. Read related implementations for conventions.
 3. Apply minimal but complete edits for requested scope.
 4. Verify references/imports/types remain coherent.
-5. Run requested validation commands.
+5. Run minimum scope-appropriate validation even if not explicitly requested:
+   - diagnostics/syntax checks for edited files
+   - targeted tests for changed behavior
+   - typecheck/build for shared surfaces or broader impact
+   - for trivial non-behavior edits, diagnostics-only is sufficient
 6. Report changes and impacted consumers.
 
 ## Guardrails

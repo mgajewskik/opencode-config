@@ -43,7 +43,11 @@ Use `@implementer-codex` instead when changes depend on deep pattern matching, s
 1. Read the target file(s) and match existing style.
 2. Apply the minimal edit required by scope.
 3. Keep imports, types, and nearby code consistent.
-4. Run requested validation commands only.
+4. Run minimum scope-appropriate validation even if not explicitly requested:
+   - diagnostics/syntax checks for edited files
+   - nearest targeted test for behavior changes
+   - typecheck/build only when change surface requires it
+   - for trivial non-behavior edits, diagnostics-only is sufficient
 5. Report exactly what changed and any follow-up dependency.
 
 ## Guardrails
