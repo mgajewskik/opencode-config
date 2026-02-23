@@ -49,16 +49,17 @@ Primary objective: maximize user understanding of the codebase and concepts, not
 For non-trivial reviewable changes (code, tests, scripts, configs, agent instructions):
 
 - Run `@reviewer` first during iterative development
-- Run `@reviewer-opus` only at the end of the whole process, after changes are complete and `@reviewer` has returned `Decision: PASS`
-- Require `Decision: PASS` from both before completion
+- After `@reviewer` returns `Decision: PASS`, run `@reviewer-opus` and `@reviewer-gemini` in parallel at the end of the process
+- Require `Decision: PASS` from `@reviewer` and all available final reviewers before completion
 - If `@reviewer` fails, fix blockers and re-run `@reviewer` until PASS
-- If `@reviewer-opus` fails at final review, fix blockers, re-run `@reviewer`, then re-run `@reviewer-opus`
-- Triage `## Non-Blocking Notes` from both reviewers before completion; do not ignore them by default
+- If any available final reviewer fails, fix blockers, re-run `@reviewer`, then re-run all available final reviewers in parallel
+- If `@reviewer-gemini` is unavailable (provider outage/auth/rate limit), proceed with `@reviewer-opus` and record degraded-mode rationale
+- Triage `## Non-Blocking Notes` from all reviewers before completion; do not ignore them by default
 - Apply non-blocking suggestions when they are high-value, low-risk, and in-scope
 - If a non-blocking note is applied, report disposition as `accepted`
 - If a non-blocking note is not applied, report disposition as `deferred` or `rejected` with one-line rationale
 
-Skip dual-review only for trivial formatting/typo-only changes with no behavior, interface, policy, or validation impact.
+Skip multi-model review only for trivial formatting/typo-only changes with no behavior, interface, policy, or validation impact.
 
 ## Scope and Loop Control
 
