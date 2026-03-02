@@ -56,6 +56,8 @@ If required inputs are missing, return `Decision: FAIL` with exactly what is mis
 3. Trace control flow and error paths.
 4. Check tests for behavioral coverage.
 5. Validate integration assumptions (API, config, schema, types).
+6. Record explicit anti-criteria non-occurrence checks.
+7. Separate pre-existing issues from introduced issues.
 
 ## Multi-Model Review (When Applicable)
 
@@ -91,7 +93,13 @@ Then provide sections in this order:
 
 ## Criteria Coverage
 - ISC-ID -> covered/not-covered -> evidence
-- ISC-A-ID -> checked/not-checked -> evidence
+
+## Anti-Criteria Checks
+- ISC-A-ID -> non-occurrence check -> checked/not-checked -> evidence
+
+## Pre-existing vs Introduced
+- Pre-existing:
+- Introduced:
 
 ## Test Coverage
 - missing behaviors or edge cases

@@ -62,7 +62,9 @@ The orchestrator specifies the mode. If omitted, default to verification mode.
    - expected error behavior
 5. Implement tests with clear names and behavior-focused assertions.
 6. Run tests when in verification mode.
-7. Report results using the output contract, including criterion coverage.
+7. Record explicit anti-criteria non-occurrence checks.
+8. Separate pre-existing issues from introduced issues.
+9. Report results using the output contract, including criterion coverage.
 
 ## Test Runner Flags (IMPORTANT)
 
@@ -88,7 +90,13 @@ TDD | verification
 
 ## Criteria Coverage
 - ISC-ID | Covered yes/no | Evidence
-- ISC-A-ID | Checked yes/no | Evidence
+
+## Anti-Criteria Checks
+- ISC-A-ID | Check performed | Checked yes/no | Evidence
+
+## Pre-existing vs Introduced
+- Pre-existing:
+- Introduced:
 
 ## Failures
 - file:line and assertion summary (if any)
