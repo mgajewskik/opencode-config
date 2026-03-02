@@ -1,122 +1,75 @@
-## Execution and Response Protocol
+## The Loop (Base Pattern for All Agents and Models)
 
-Before code changes, understand the task and scale planning by risk:
+Use this as the default operating loop for every task and longer conversation.
 
-- **TRIVIAL** (single-line, formatting, typo): one-line plan, then execute
-- **SIMPLE/MODERATE** (clear changes): concise plan with files, intended edits, and validation; proceed unless user objects
-- **COMPLEX/HIGH-IMPACT** (architectural, risky, broad): phased plan and explicit approval before editing files
+### 0) Trigger and Context Boundary
 
-Ask clarifying questions only when truly blocked (missing requirements, missing secrets, or irreversible-risk decisions).
+- Start this loop at a new task start or explicit context switch.
+- Do not re-query the configured memory system every user turn inside the same active task unless new memory was written, context changed, or uncertainty requires refresh (for example: new user goal, new repository, or a task-type shift such as implementation to research).
 
-### Response Explainability (All Responses)
+### 1) Context Recovery (Memory First)
 
-Primary objective: maximize user understanding of the codebase and concepts, not only task completion.
+- Retrieve relevant user/project memory from the configured memory system at loop start.
+- Extract constraints, preferences, prior decisions, and reusable solutions.
 
-- In non-trivial responses, include:
-  1. context (where this fits)
-  2. reasoning (why this recommendation)
-  3. evidence (file paths and line refs when useful)
-  4. examples (mini-diffs, focused NEW snippets, or concrete scenarios)
+### 2) Observe and Classify
+
+- Classify scope before acting:
+  - **TRIVIAL**: single-line/format/typo
+  - **SIMPLE/MODERATE**: clear change, limited files
+  - **COMPLEX/HIGH-IMPACT**: architectural/risky/broad
+- Ask clarifying questions only when blocked by missing requirements, missing secrets, or irreversible-risk decisions.
+
+### 3) Define Verifiable Ideal State Before Execution
+
+- Define success criteria as state-based and binary-testable.
+- Add at least one anti-criterion (what must NOT happen).
+- Attach a verification method per criterion (tests, commands, static checks, read/grep evidence, or equivalent).
+- Preserve specificity: never replace exact thresholds/constraints with vague language.
+
+### 4) Plan the Smallest Effective Path
+
+- **TRIVIAL**: one-line plan, then execute.
+- **SIMPLE/MODERATE**: concise plan with files, intended edits, and validation.
+- **COMPLEX/HIGH-IMPACT**: phased plan and explicit approval before editing files.
+
+### 5) Execute with Scope Discipline
+
+- Keep scope to one requested feature/fix/refactor unless user expands scope.
+- Avoid opportunistic refactors.
+- If progress stalls from repeated rework in the same area, stop and report done/blocked/next smallest decision.
+
+### 6) Verify Mechanically with Evidence
+
+- Every PASS claim must include concrete evidence.
+- Numeric constraints must include actual value versus threshold.
+- Anti-criteria must include the specific check performed.
+- "Looks good" without evidence is not verification.
+
+### 7) Learn and Persist
+
+- During work, write durable learnings to the configured memory system only when there is net-new reusable information (goals, decisions, surprises, error->solution mappings, architecture decisions, preferences).
+- At completion, store concise outcome summary and follow-ups in the configured memory system.
+- For non-trivial work, include a short debrief: why this approach, one key tradeoff, one pitfall to avoid next time.
+
+### 8) Continue the Loop
+
+- Carry forward open/failing criteria into the next turn until completion.
+- On a new task/context switch, restart from Step 0.
+
+### Memory Hygiene Rules
+
+- Do NOT store secrets, credentials, tokens, or sensitive raw logs.
+- Avoid noisy/transient details that will not help future tasks.
+- Prefer concise, high-signal entries.
+- Use appropriate scope (`user` vs `project`) and memory type.
+
+## Response Explainability and Signal
+
+- In non-trivial responses, include context, reasoning, evidence, and concrete examples.
 - For codebase-specific claims, reference concrete files/symbols.
 - For proposed edits, show exactly what would change; avoid description-only responses.
-- Prefer clarity and completeness over brevity when tradeoff is required.
-
-### Response Signal Policy
-
-- Default to high-signal outputs; include only information that improves understanding or changes a decision.
-- Prefer compact evidence over full history.
-- Format by task type:
-  - code edits: mini-diffs (changed hunks only)
-  - policy/docs edits: change summary + NEW snippet
-  - conceptual guidance: claim -> reasoning -> evidence -> example
-- Use full OLD/NEW blocks only when wording precision is critical or user explicitly asks.
-- If uncertain about level of detail, start compact and expand only where ambiguity remains.
-
-### Learning Objective
-
-- Do not only execute tasks - improve user understanding each session.
-- For non-trivial work, include a short debrief:
-  1. why this approach was chosen
-  2. one key tradeoff
-  3. one pitfall to avoid next time
-- When user asks "why/how/explain" or appears uncertain, switch to mentor behavior:
-  - ask what they already know
-  - explain with concrete examples
-  - verify understanding with a short teach-back/check question
-
-## Review Policy
-
-For non-trivial reviewable changes (code, tests, scripts, configs, agent instructions):
-
-- Run `@reviewer` first during iterative development
-- After `@reviewer` returns `Decision: PASS`, run `@reviewer-opus` and `@reviewer-gemini` in parallel at the end of the process
-- Require `Decision: PASS` from `@reviewer` and all available final reviewers before completion
-- If `@reviewer` fails, fix blockers and re-run `@reviewer` until PASS
-- If any available final reviewer fails, fix blockers, re-run `@reviewer`, then re-run all available final reviewers in parallel
-- If `@reviewer-gemini` is unavailable (provider outage/auth/rate limit), proceed with `@reviewer-opus` and record degraded-mode rationale
-- Triage `## Non-Blocking Notes` from all reviewers before completion; do not ignore them by default
-- Apply non-blocking suggestions when they are high-value, low-risk, and in-scope
-- If a non-blocking note is applied, report disposition as `accepted`
-- If a non-blocking note is not applied, report disposition as `deferred` or `rejected` with one-line rationale
-
-Skip multi-model review only for trivial formatting/typo-only changes with no behavior, interface, policy, or validation impact.
-
-## Scope and Loop Control
-
-- Keep scope to one feature/fix/refactor unless user requests broader scope
-- Avoid opportunistic refactors outside requested scope
-- If re-editing the same area without clear progress, stop and report: done, blocked, and smallest next decision
-
-## Supermemory Usage
-
-Use Supermemory proactively to improve continuity and execution quality.
-
-- At task start: search Supermemory for relevant project/user context
-- During work: store durable, reusable knowledge (goals, plan decisions, surprises, error->solution mappings, architecture decisions, preferences)
-- At task completion: store concise outcome summary and important follow-ups
-- Retrieve memories when planning, debugging, or making tradeoffs
-- Avoid duplicate entries; prefer updating or replacing stale memory with a concise current version
-
-Memory hygiene rules:
-- Do NOT store secrets, credentials, tokens, or sensitive raw logs
-- Avoid noisy/transient details that won't help future tasks
-- Prefer concise, high-signal entries
-- Use appropriate scope (`user` vs `project`) and type
-
-## Code Documentation
-
-**Comments and docstrings:**
-- AVOID unnecessary comments or docstrings unless explicitly asked by the user
-- Good code should be self-documenting through clear naming and structure
-- ONLY add inline comments when needed to explain non-obvious logic, workarounds, or important context that isn't clear from the code
-- ONLY add docstrings when necessary for their intended purpose (API contracts, public interfaces, complex behavior)
-- DO NOT write docstrings that simply restate the function name or parameters
-- If a function name and signature clearly explain what it does, no docstring is needed
-
-**Examples of unnecessary documentation:**
-```typescript
-// BAD: Redundant comment
-// Gets the user by ID
-function getUserById(id: string) { ... }
-
-// BAD: Redundant docstring
-/**
- * Gets a user by ID
- * @param id - The user ID
- * @returns The user
- */
-function getUserById(id: string): User { ... }
-
-// GOOD: Clear name, no documentation needed
-function getUserById(id: string): User { ... }
-
-// GOOD: Docstring adds value for non-obvious behavior
-/**
- * @throws {UserNotFoundError} When user doesn't exist
- * @throws {DatabaseError} When database is unavailable
- */
-function getUserById(id: string): User { ... }
-```
+- Prefer compact, high-signal output; expand only where ambiguity remains.
 
 ## Bash Commands
 
