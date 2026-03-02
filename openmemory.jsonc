@@ -1,0 +1,47 @@
+{
+  // Preferred transport mode for tooling/docs.
+  // NOTE: current opencode-openmemory plugin implementation is REST-only.
+  // This key is kept for forward compatibility.
+  // Options: "openmemory" | "openmemory-rest"
+  "backend": "openmemory-rest",
+
+  // OpenMemory REST base URL.
+  // Default OpenMemory docker-compose uses http://localhost:8080.
+  "apiUrl": "http://localhost:8080",
+
+  // Optional explicit API key.
+  // Leave commented to use env var OPENMEMORY_API_KEY.
+  // "apiKey": "your-api-key-if-needed",
+
+  // Search settings (used during memory retrieval and context injection)
+  // Minimum semantic similarity (0-1) required for a match to be returned.
+  // Higher = stricter, fewer but more precise matches.
+  "similarityThreshold": 0.6,
+
+  // Max number of search hits injected from the relevant scope for a query.
+  // Lower keeps prompts compact; higher adds recall but increases token usage.
+  "maxMemories": 5,
+
+  // Max number of project memories fetched when building initial project context.
+  // Mainly affects first-message context depth.
+  "maxProjectMemories": 10,
+
+  // Max number of user profile facts injected into context.
+  // Caps cross-project preference/profile expansion.
+  "maxProfileItems": 5,
+
+  // Minimum salience/importance score (0-1) required to include a memory.
+  // Use this to suppress low-value or stale memories.
+  "minSalience": 0.3,
+
+  // Include user profile facts in injected context.
+  // If false, only direct memory retrieval is injected.
+  "injectProfile": true,
+
+  // Prefix used to derive scoped identifiers for user/project isolation.
+  "scopePrefix": "opencode",
+
+  // Default sector used when storing new memories without explicit sector.
+  // Options: "episodic", "semantic", "procedural", "emotional", "reflective"
+  "defaultSector": "semantic"
+}

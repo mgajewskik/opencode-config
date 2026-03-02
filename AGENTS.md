@@ -5,11 +5,11 @@ Use this as the default operating loop for every task and longer conversation.
 ### 0) Trigger and Context Boundary
 
 - Start this loop at a new task start or explicit context switch.
-- Do not re-query the configured memory system every user turn inside the same active task unless new memory was written, context changed, or uncertainty requires refresh (for example: new user goal, new repository, or a task-type shift such as implementation to research).
+- Do not re-query OpenMemory every user turn inside the same active task unless new memory was written, context changed, or uncertainty requires refresh (for example: new user goal, new repository, or a task-type shift such as implementation to research).
 
 ### 1) Context Recovery (Memory First)
 
-- Retrieve relevant user/project memory from the configured memory system at loop start.
+- Retrieve relevant user/project memory from OpenMemory at loop start.
 - Extract constraints, preferences, prior decisions, and reusable solutions.
 
 ### 2) Observe and Classify
@@ -48,8 +48,8 @@ Use this as the default operating loop for every task and longer conversation.
 
 ### 7) Learn and Persist
 
-- During work, write durable learnings to the configured memory system only when there is net-new reusable information (goals, decisions, surprises, error->solution mappings, architecture decisions, preferences).
-- At completion, store concise outcome summary and follow-ups in the configured memory system.
+- During work, write durable learnings to OpenMemory only when there is net-new reusable information (goals, decisions, surprises, error->solution mappings, architecture decisions, preferences).
+- At completion, store concise outcome summary and follow-ups in OpenMemory.
 - For non-trivial work, include a short debrief: why this approach, one key tradeoff, one pitfall to avoid next time.
 
 ### 8) Continue the Loop
@@ -58,6 +58,8 @@ Use this as the default operating loop for every task and longer conversation.
 - On a new task/context switch, restart from Step 0.
 
 ### Memory Hygiene Rules
+
+- These rules apply to OpenMemory entries and retrieval behavior.
 
 - Do NOT store secrets, credentials, tokens, or sensitive raw logs.
 - Avoid noisy/transient details that will not help future tasks.

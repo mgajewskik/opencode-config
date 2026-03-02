@@ -1,8 +1,8 @@
 ---
-description: Initialize Supermemory with comprehensive codebase knowledge
+description: Initialize OpenMemory with comprehensive codebase knowledge
 ---
 
-# Initializing Supermemory
+# Initializing OpenMemory
 
 You are initializing persistent memory for this codebase. This is not just data collection - you're building context that will make you significantly more effective across all future sessions.
 
@@ -99,10 +99,10 @@ Good (thorough):
 
 ## Saving Memories
 
-Use the `supermemory` tool for each distinct insight:
+Use the `openmemory` tool for each distinct insight:
 
 ```
-supermemory(mode: "add", content: "...", type: "...", scope: "project")
+openmemory(mode: "add", content: "...", type: "...", scope: "project")
 ```
 
 **Types:**
@@ -143,7 +143,7 @@ Then ask: "I've initialized memory with X insights. Want me to continue refining
 ## Your Task
 
 1. Ask upfront questions (research depth, rules, preferences)
-2. Check existing memories: `supermemory(mode: "list", scope: "project")`
+2. Check existing memories: `openmemory(mode: "list", scope: "project")`
 3. Research based on chosen depth
 4. Save memories incrementally as you discover insights
 5. Reflect and verify completeness

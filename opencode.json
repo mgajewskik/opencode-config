@@ -5,7 +5,7 @@
     "AGENTS.md"
   ],
   "plugin": [
-    "opencode-supermemory",
+    "@happycastle/opencode-openmemory@0.0.3",
     "opencode-anthropic-auth",
     "opencode-mermaid-renderer"
   ],
