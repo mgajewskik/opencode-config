@@ -23,6 +23,16 @@ permission:
 
 You write tests for the requested behavior only. Keep scope tight, follow existing test patterns, and return clear results.
 
+## Required Input Packet
+
+- Main task goal
+- Verifiable criteria and anti-criteria relevant to the change
+- Changed artifacts and direct impact paths
+- Scope boundaries (in/out)
+- Existing validation evidence (if available)
+
+If these inputs are missing, return `blocked` with the smallest missing fields.
+
 ## Modes
 
 - TDD mode: write failing tests that define expected behavior before implementation.
@@ -44,14 +54,15 @@ The orchestrator specifies the mode. If omitted, default to verification mode.
 ## Workflow
 
 1. Understand requested behavior and mode.
-2. Detect existing framework and project test conventions.
-3. Design a minimal test matrix:
+2. Map scenarios directly to provided criteria and anti-criteria.
+3. Detect existing framework and project test conventions.
+4. Design a minimal test matrix:
    - happy path
    - critical edge cases
    - expected error behavior
-4. Implement tests with clear names and behavior-focused assertions.
-5. Run tests when in verification mode.
-6. Report results using the output contract.
+5. Implement tests with clear names and behavior-focused assertions.
+6. Run tests when in verification mode.
+7. Report results using the output contract, including criterion coverage.
 
 ## Test Runner Flags (IMPORTANT)
 
@@ -74,6 +85,10 @@ TDD | verification
 
 ## Test Matrix
 - Scenario: ... | Expected: ... | Status: pass/fail/not-run
+
+## Criteria Coverage
+- ISC-ID | Covered yes/no | Evidence
+- ISC-A-ID | Checked yes/no | Evidence
 
 ## Failures
 - file:line and assertion summary (if any)

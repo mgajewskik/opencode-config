@@ -1,7 +1,7 @@
 ---
 description: Intelligent Gemini advisory agent for deep analysis, second opinions, and specialized knowledge. Use when primary agent needs high-quality reasoning on technical, coding, or soft skill topics. Spawns via Task tool, returns structured analysis for further processing. Do NOT use for code modifications or file operations.
 mode: subagent
-model: google/gemini-3-pro-preview
+model: google/gemini-3.1-pro-preview
 temperature: 0.3
 reasoningEffort: high
 tools:
