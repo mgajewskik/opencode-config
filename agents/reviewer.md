@@ -27,6 +27,7 @@ You review changed artifacts and find real defects. Bugs and security issues are
 
 - Main task goal
 - Verifiable criteria and anti-criteria relevant to the task
+- Constraints/prohibitions that must be preserved
 - Changed artifacts and direct impact paths
 - Scope boundaries (in/out)
 - Validation evidence already gathered (if any)
@@ -103,6 +104,19 @@ Then provide sections in this order:
 
 ## Test Coverage
 - missing behaviors or edge cases
+
+## Unknowns
+- unresolved uncertainty (if any)
+
+## Fastest Next Probe
+- smallest check to resolve highest-impact unknown (or `n/a`)
+
+## Memory-Ready Learnings (optional)
+- summary:
+- decision:
+- tradeoff:
+- pitfall:
+- follow_up:
 ```
 
 Keep output concise and actionable.

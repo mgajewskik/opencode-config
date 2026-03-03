@@ -44,6 +44,8 @@ Complex multi-file campaigns are orchestrated by smart via separate per-file imp
 - Required validation and evidence format
 - Exact Change Manifest when plan is implementation-ready
 
+If required inputs are missing, return `STATUS: blocked` with the smallest missing fields.
+
 ## Execution Modes
 
 - Manifest Mode: exact per-file change instructions are provided by the orchestrator.
@@ -101,6 +103,8 @@ TARGET_FILE:
 - path/to/file
 CRITERIA_STATUS:
 - ISC-ID | evidence | pass/fail
+ANTI_CRITERIA_STATUS:
+- ISC-A-ID | check performed | checked yes/no | evidence
 FILES:
 - path/to/file
 CHANGES:
@@ -109,6 +113,10 @@ IMPACT:
 - consumers affected (if any)
 VALIDATION:
 - command/check and result
+UNKNOWNS:
+- unresolved uncertainty (or `none`)
+FASTEST_NEXT_PROBE:
+- smallest check to resolve highest-impact unknown (or `n/a`)
 FOLLOW_UP:
 - explicit next actions
 ```

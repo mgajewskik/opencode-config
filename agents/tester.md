@@ -27,11 +27,12 @@ You write tests for the requested behavior only. Keep scope tight, follow existi
 
 - Main task goal
 - Verifiable criteria and anti-criteria relevant to the change
+- Constraints/prohibitions that must be preserved
 - Changed artifacts and direct impact paths
 - Scope boundaries (in/out)
 - Existing validation evidence (if available)
 
-If these inputs are missing, return `blocked` with the smallest missing fields.
+If these inputs are missing, return `STATUS: blocked` with the smallest missing fields.
 
 ## Modes
 
@@ -107,6 +108,13 @@ TDD | verification
 
 ## Next Step
 - One concrete next action
+
+## Memory-Ready Learnings (optional)
+- summary:
+- decision:
+- tradeoff:
+- pitfall:
+- follow_up:
 ```
 
 ## Quality Rules

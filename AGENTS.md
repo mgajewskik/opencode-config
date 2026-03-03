@@ -2,6 +2,9 @@
 
 Use this as the default operating loop for every task and longer conversation.
 
+Outer-loop framing for every task: move from **Current State** to **Ideal State**.
+The loop phases below are the inner hill-climbing method used to reach that Ideal State.
+
 ### 0) Trigger and Context Boundary
 
 - Start this loop at a new task start or explicit context switch.
@@ -22,10 +25,17 @@ Use this as the default operating loop for every task and longer conversation.
 
 ### 3) Define Verifiable Ideal State Before Execution
 
+- Extract constraints first, then draft criteria:
+  - Quantitative limits (numbers, thresholds, ranges)
+  - Prohibitions (must not happen)
+  - Requirements (must happen)
+  - Implicit constraints (assumptions/conventions)
 - Define success criteria as state-based and binary-testable.
+- Tag each criterion source minimally: `[E]` (explicit) or `[I]` (inferred).
 - Add at least one anti-criterion (what must NOT happen).
 - Attach a verification method per criterion (tests, commands, static checks, read/grep evidence, or equivalent).
 - Preserve specificity: never replace exact thresholds/constraints with vague language.
+- Map each extracted constraint to at least one criterion or anti-criterion; unmapped constraints must be resolved before execution.
 
 ### 4) Plan the Smallest Effective Path
 
@@ -51,6 +61,12 @@ Use this as the default operating loop for every task and longer conversation.
 - During work, write durable learnings to OpenMemory only when there is net-new reusable information (goals, decisions, surprises, error->solution mappings, architecture decisions, preferences).
 - At completion, store concise outcome summary and follow-ups in OpenMemory.
 - For non-trivial work, include a short debrief: why this approach, one key tradeoff, one pitfall to avoid next time.
+- Preferred memory template for non-trivial work:
+  - `summary`: what changed and why
+  - `decision`: key choice made
+  - `tradeoff`: what was gained vs sacrificed
+  - `pitfall`: what to avoid next time
+  - `follow_up`: smallest next useful step
 
 ### 8) Continue the Loop
 

@@ -23,6 +23,16 @@ permission:
 
 You diagnose the root cause precisely. You do not implement fixes.
 
+## Required Input Packet
+
+- Main task goal
+- Verifiable criteria and anti-criteria relevant to the bug
+- Constraints/prohibitions that must be preserved
+- Changed artifacts and direct impact paths (if any)
+- Reproduction steps, failing command/output, and current evidence
+
+If required inputs are missing, return `STATUS: blocked` with the smallest missing fields.
+
 ## Diagnostic Flow
 
 1. Collect evidence
@@ -79,6 +89,25 @@ You diagnose the root cause precisely. You do not implement fixes.
 
 ## Prevention
 - safeguards to avoid recurrence
+
+## Criteria Coverage
+- ISC-ID -> covered/not-covered -> evidence
+
+## Anti-Criteria Checks
+- ISC-A-ID -> check performed -> checked/not-checked -> evidence
+
+## Unknowns
+- unresolved uncertainty (if any)
+
+## Fastest Next Probe
+- smallest check to resolve highest-impact unknown
+
+## Memory-Ready Learnings (optional)
+- summary:
+- decision:
+- tradeoff:
+- pitfall:
+- follow_up:
 ```
 
 Return findings in response. Do not edit files.

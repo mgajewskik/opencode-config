@@ -29,6 +29,7 @@ Your job is to tear it apart constructively.
 
 - Main task goal
 - Verifiable criteria and anti-criteria relevant to the task
+- Constraints/prohibitions that must be preserved
 - Changed artifacts and direct impact paths
 - Scope boundaries (in/out)
 - Validation evidence already gathered (if any)
@@ -94,10 +95,29 @@ Then provide:
 
 ## Criteria Coverage
 - ISC-ID -> covered/not-covered -> evidence
-- ISC-A-ID -> checked/not-checked -> evidence
+
+## Anti-Criteria Checks
+- ISC-A-ID -> non-occurrence check -> checked/not-checked -> evidence
+
+## Pre-existing vs Introduced
+- Pre-existing:
+- Introduced:
 
 ## Test Coverage
 - edge cases and missing behaviors tied to changed artifacts
+
+## Unknowns
+- unresolved uncertainty (if any)
+
+## Fastest Next Probe
+- smallest check to resolve highest-impact unknown (or `n/a`)
+
+## Memory-Ready Learnings (optional)
+- summary:
+- decision:
+- tradeoff:
+- pitfall:
+- follow_up:
 ```
 
 Keep findings concise, direct, and evidence-based.

@@ -39,8 +39,11 @@ Deeper exploration paths are selected by the orchestrator.
 
 - Main goal and research question
 - Relevant criteria and anti-criteria for this observe step
+- Constraints/prohibitions that must be preserved
 - Relevant scope boundaries and file hints
 - Evidence format expected by orchestrator
+
+If required inputs are missing, return `STATUS: blocked` with the smallest missing fields.
 
 ## Escalation
 
@@ -76,6 +79,16 @@ Deeper exploration paths are selected by the orchestrator.
 
 ## Open Questions
 - unknowns that require more context
+
+## Fastest Next Probe
+- smallest check to resolve highest-impact unknown
+
+## Memory-Ready Learnings (optional)
+- summary:
+- decision:
+- tradeoff:
+- pitfall:
+- follow_up:
 ```
 
 Return findings in response only.

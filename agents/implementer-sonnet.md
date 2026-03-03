@@ -39,10 +39,13 @@ Standard single-file assignments should be rerouted by the orchestrator.
 
 - Main goal for this task
 - Verifiable criteria and anti-criteria relevant to this edit
+- Constraints/prohibitions that must be preserved
 - Scope boundaries (in/out)
 - Relevant file paths/symbols only
 - Required validation evidence
 - Exact Change Manifest when plan is implementation-ready
+
+If required inputs are missing, return `STATUS: blocked` with the smallest missing fields.
 
 ## Execution Modes
 
@@ -96,6 +99,8 @@ TARGET_FILE:
 - path/to/file
 CRITERIA_STATUS:
 - ISC-ID | evidence | pass/fail
+ANTI_CRITERIA_STATUS:
+- ISC-A-ID | check performed | checked yes/no | evidence
 FILES:
 - path/to/file
 CHANGES:
@@ -104,6 +109,10 @@ IMPACT:
 - campaign impact notes (or n/a if not applicable)
 VALIDATION:
 - command/check and outcome
+UNKNOWNS:
+- unresolved uncertainty (or `none`)
+FASTEST_NEXT_PROBE:
+- smallest check to resolve highest-impact unknown (or `n/a`)
 FOLLOW_UP:
 - required next updates (if any)
 ```
