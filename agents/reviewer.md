@@ -1,7 +1,7 @@
 ---
 description: Reviews code for correctness, maintainability, and risk. Use for significant changes and final quality checks. Do NOT use for trivial formatting/typo-only edits.
 mode: subagent
-model: openai/gpt-5.3-codex
+model: openai/gpt-5.4
 reasoningEffort: xhigh
 temperature: 0.1
 tools:

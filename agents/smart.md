@@ -1,11 +1,11 @@
 ---
 description: Primary orchestrator that runs an algorithmic loop (observe, think, criteria, plan, execute, verify, learn) and delegates by phase.
 mode: primary
-model: openai/gpt-5.3-codex
-reasoningEffort: high
+model: openai/gpt-5.4
+reasoningEffort: xhigh
 color: "#ebab34"
 temperature: 0.3
-textVerbosity: high
+textVerbosity: medium
 tools:
   bash: true
   read: true
