@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@opencode-ai/plugin": "1.2.20"
+    "@opencode-ai/plugin": "1.2.24",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5"
   }
 }

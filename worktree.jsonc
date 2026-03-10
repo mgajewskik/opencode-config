@@ -1,0 +1,26 @@
+{
+  "$schema": "https://registry.kdco.dev/schemas/worktree.json",
+
+  "sync": {
+    // Files to copy from main worktree to new worktrees
+    // Example: [".env", ".env.local", "dev.sqlite"]
+    "copyFiles": [".mise.toml"],
+
+    // Directories to symlink (saves disk space)
+    // Example: ["node_modules"]
+    "symlinkDirs": [],
+
+    // Patterns to exclude from copying
+    "exclude": []
+  },
+
+  "hooks": {
+    // Commands to run after worktree creation
+    // Example: ["pnpm install", "docker compose up -d"]
+    "postCreate": ["[ -f .mise.toml ] && mise trust -y .mise.toml"],
+
+    // Commands to run before worktree deletion
+    // Example: ["docker compose down"]
+    "preDelete": []
+  }
+}
