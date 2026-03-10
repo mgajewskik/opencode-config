@@ -1,7 +1,7 @@
 ---
 description: Fetches and analyzes web content from URLs. Use for external documentation, best practices, API docs, and online resources. Do NOT use for internal codebase exploration or when you already have the specific URL.
 mode: subagent
-model: anthropic/claude-sonnet-4-6
+model: opencode/claude-sonnet-4-6
 thinking:
   type: adaptive
 temperature: 0.1

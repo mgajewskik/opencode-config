@@ -19,7 +19,7 @@ Filename becomes agent name: `reviewer.md` → `@reviewer`
 ---
 description: When to use this agent (CRITICAL - include examples)
 mode: subagent          # primary | subagent | all
-model: inherit          # inherit | anthropic/claude-... | openai/...
+model: inherit          # inherit | opencode/claude-... | openai/...
 temperature: 0.1        # Optional: 0.0-1.0
 tools:
   read: true
@@ -58,7 +58,7 @@ description: Code reviewer
 ### model
 
 - `inherit` - Use parent's model (recommended)
-- Full model ID: `anthropic/claude-sonnet-4-5`, `openai/gpt-4o`, etc.
+- Full model ID: `opencode/claude-sonnet-4-5`, `openai/gpt-4o`, etc.
 
 ### tools
 
@@ -214,7 +214,7 @@ Agents can be defined in `opencode.json`:
     "reviewer": {
       "description": "Reviews code for bugs",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-5",
+      "model": "opencode/claude-sonnet-4-5",
       "prompt": "{file:./prompts/review.md}",
       "tools": {
         "write": false,

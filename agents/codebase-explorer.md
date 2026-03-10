@@ -1,7 +1,7 @@
 ---
 description: Fast Sonnet codebase explorer for lightweight discovery and quick mapping. Return blocked for orchestrator escalation when deeper multi-module analysis is needed.
 mode: subagent
-model: anthropic/claude-sonnet-4-6
+model: opencode/claude-sonnet-4-6
 thinking:
   type: adaptive
 temperature: 0.1

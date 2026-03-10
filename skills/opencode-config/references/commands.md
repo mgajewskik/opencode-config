@@ -19,7 +19,7 @@ Filename becomes command name: `test.md` → `/test`
 ---
 description: Brief description shown in /help (required)
 agent: agent-name        # Optional: which agent executes
-model: anthropic/...     # Optional: override model
+model: opencode/...     # Optional: override model
 ---
 ```
 
@@ -114,7 +114,7 @@ Review each file for:
 ---
 description: Deep analysis
 agent: plan
-model: anthropic/claude-opus-4-5
+model: opencode/claude-opus-4-5
 ---
 
 Analyze $ARGUMENTS thoroughly without making changes.

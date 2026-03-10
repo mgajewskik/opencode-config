@@ -1,7 +1,7 @@
 ---
 description: Sonnet implementer for complex multi-file change campaigns orchestrated by smart (one file per invocation).
 mode: subagent
-model: anthropic/claude-sonnet-4-6
+model: opencode/claude-sonnet-4-6
 thinking:
   type: adaptive
 temperature: 0.1

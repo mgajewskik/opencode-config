@@ -1,7 +1,7 @@
 ---
 description: Writes and updates all types of documentation including READMEs, API docs, user guides, inline comments, and changelogs. Use when you need comprehensive documentation written. Do NOT use for simple inline comments or code review feedback.
 mode: subagent
-model: anthropic/claude-sonnet-4-6
+model: opencode/claude-sonnet-4-6
 thinking:
   type: adaptive
 temperature: 0.1

@@ -1,7 +1,7 @@
 ---
 description: Adversarial edge-case reviewer optimized for Opus 4.6. Use as an independent cross-check reviewer to catch correctness, safety, and integration issues that are easy to miss.
 mode: subagent
-model: anthropic/claude-opus-4-6
+model: opencode/claude-opus-4-6
 thinking:
   type: adaptive
 temperature: 0.1

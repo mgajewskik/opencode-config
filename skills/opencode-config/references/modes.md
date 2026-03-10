@@ -34,7 +34,7 @@ Filename becomes mode name: `review.md` → `review` mode
 ```yaml
 ---
 description: Mode description
-model: anthropic/claude-sonnet-4-5  # Optional
+model: opencode/claude-sonnet-4-5  # Optional
 temperature: 0.1                     # Optional
 tools:
   read: true
@@ -136,7 +136,7 @@ Modes can be defined in `opencode.json`:
 {
   "mode": {
     "build": {
-      "model": "anthropic/claude-sonnet-4-5",
+      "model": "opencode/claude-sonnet-4-5",
       "prompt": "{file:./prompts/build.md}",
       "tools": {
         "write": true,
@@ -145,7 +145,7 @@ Modes can be defined in `opencode.json`:
       }
     },
     "plan": {
-      "model": "anthropic/claude-haiku-4-5",
+      "model": "opencode/claude-haiku-4-5",
       "tools": {
         "write": false,
         "edit": false,
