@@ -5,7 +5,6 @@ model: openai/gpt-5.4
 reasoningEffort: high
 color: "#ebab34"
 temperature: 0.3
-textVerbosity: medium
 tools:
   bash: true
   read: true

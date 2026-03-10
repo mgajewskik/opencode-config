@@ -7,10 +7,18 @@
   "plugin": [
     "@happycastle/opencode-openmemory@0.0.3",
     "opencode-anthropic-auth",
-    "opencode-mermaid-renderer"
+    "opencode-mermaid-renderer",
+    "true-mem"
   ],
-  "model": "openai/gpt-5.3-codex",
+  "model": "openai/gpt-5.4",
   "small_model": "openai/gpt-5.3-codex",
+  "provider": {
+    "openai": {
+      "options": {
+        "timeout": 300000
+      }
+    }
+  },
   "agent": {
     "smart": {
       "prompt": "{file:./agents/smart.md}"
