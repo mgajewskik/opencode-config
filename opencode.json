@@ -5,9 +5,7 @@
     "AGENTS.md"
   ],
   "plugin": [
-    "@happycastle/opencode-openmemory@0.0.3",
-    "opencode-mermaid-renderer",
-    "true-mem"
+    "opencode-mermaid-renderer"
   ],
   "model": "openai/gpt-5.4",
   "small_model": "openai/gpt-5.3-codex",
