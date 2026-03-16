@@ -157,7 +157,7 @@ skills-ref validate ./my-skill
 Or the local validation script:
 
 ```bash
-python scripts/quick_validate.py /path/to/skill-directory
+uv run scripts/quick_validate.py /path/to/skill-directory
 ```
 
 ## Source

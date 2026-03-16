@@ -71,6 +71,57 @@ Then:
 
 ---
 
+## Evaluation Ladder
+
+Pick the lightest level that still gives believable evidence.
+
+### Level 1: Manual Spot Check
+
+Use for:
+
+- brand-new skills in early drafting
+- one-off architecture sanity checks
+- environments without automation support
+
+Do:
+
+- run 2-3 realistic prompts
+- inspect outputs directly
+- note obvious gaps before writing more eval machinery
+
+### Level 2: Baseline Comparison
+
+Use for:
+
+- reusable skills
+- claims that the skill improves quality or efficiency
+- refactors where the old version already works somewhat
+
+Do:
+
+- compare `with_skill` vs `without_skill` or prior-version runs
+- keep prompts identical across both sides
+- save transcripts and outputs separately
+- inspect not just final artifacts but also wasted execution patterns
+
+### Level 3: Iterative Benchmarking
+
+Use for:
+
+- skills expected to be reused heavily
+- trigger-boundary optimization
+- close comparisons between competing designs
+
+Do:
+
+- run multiple evals across multiple iterations
+- collect pass rate, time, token, and user-correction signals
+- aggregate instead of cherry-picking a single good run
+
+For the full loop, also read `references/skill-lifecycle.md`.
+
+---
+
 ## Success Criteria
 
 Define before building. Aspirational targets, not precise thresholds.
@@ -99,6 +150,29 @@ Define before building. Aspirational targets, not precise thresholds.
 
 Iterate on ONE challenging task until Claude succeeds, then extract winning approach into skill. Faster signal than broad testing.
 
+### Human Review Before Overfitting
+
+For subjective tasks, show outputs to the user before you rewrite the skill around aggregate metrics.
+
+Use human review to answer:
+
+- which outputs are already acceptable
+- what feels wrong about the failures
+- whether the issue is structure, quality, or over-constraint
+
+Do not force subjective quality into shallow assertions if the user can judge it faster and better.
+
+### Promote Repeated Work Into Scripts
+
+If repeated eval runs keep reinventing the same helper logic, move that logic into `scripts/`.
+
+Examples:
+
+- repeated frontmatter normalization
+- repeated format validation
+- repeated benchmark aggregation
+- repeated file conversion helpers
+
 ### Iteration Signals
 
 **Undertriggering (skill doesn't load when it should):**
@@ -116,6 +190,13 @@ Iterate on ONE challenging task until Claude succeeds, then extract winning appr
 - API failures
 - User corrections needed
 - **Fix:** Improve instructions, add error handling
+
+**Overfitting:**
+
+- New changes help one eval but hurt paraphrases
+- Description grows into a keyword dump
+- Success depends on exact wording
+- **Fix:** Generalize around intent categories, not specific prompts
 
 ---
 
@@ -174,3 +255,4 @@ Do not skip validation steps.
 - [ ] Monitor for under/over-triggering
 - [ ] Collect user feedback
 - [ ] Iterate on description and instructions
+- [ ] Snapshot successful patterns into references/ or scripts/ when reuse emerges

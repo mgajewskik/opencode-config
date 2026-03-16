@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
-"""
-Quick validation script for skills - minimal version
-"""
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+"""Quick validation script for skills."""
 
 import sys
-import os
 import re
 import yaml
 from pathlib import Path
@@ -13,6 +15,10 @@ from pathlib import Path
 def validate_skill(skill_path):
     """Basic validation of a skill"""
     skill_path = Path(skill_path)
+
+    # Check skill folder exists
+    if not skill_path.exists() or not skill_path.is_dir():
+        return False, f"Skill directory not found: {skill_path}"
 
     # Check SKILL.md exists
     skill_md = skill_path / "SKILL.md"
@@ -39,7 +45,6 @@ def validate_skill(skill_path):
     except yaml.YAMLError as e:
         return False, f"Invalid YAML in frontmatter: {e}"
 
-    # Define allowed properties per Agent Skills spec (https://agentskills.io/specification)
     ALLOWED_PROPERTIES = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 
     # Check for unexpected properties (excluding nested keys under metadata)
@@ -50,47 +55,49 @@ def validate_skill(skill_path):
             f"Allowed properties are: {', '.join(sorted(ALLOWED_PROPERTIES))}"
         )
 
-    # Check required fields
     if "name" not in frontmatter:
         return False, "Missing 'name' in frontmatter"
     if "description" not in frontmatter:
         return False, "Missing 'description' in frontmatter"
 
-    # Extract name for validation
     name = frontmatter.get("name", "")
     if not isinstance(name, str):
         return False, f"Name must be a string, got {type(name).__name__}"
     name = name.strip()
     if name:
-        # Check naming convention (kebab-case: lowercase with hyphens)
         if not re.match(r"^[a-z0-9-]+$", name):
             return False, f"Name '{name}' should be kebab-case (lowercase letters, digits, and hyphens only)"
         if name.startswith("-") or name.endswith("-") or "--" in name:
             return False, f"Name '{name}' cannot start/end with hyphen or contain consecutive hyphens"
-        # Check name length (max 64 characters per spec)
         if len(name) > 64:
             return False, f"Name is too long ({len(name)} characters). Maximum is 64 characters."
+        if skill_path.name != name:
+            return False, f"Directory name '{skill_path.name}' must match skill name '{name}'"
 
-    # Extract and validate description
     description = frontmatter.get("description", "")
     if not isinstance(description, str):
         return False, f"Description must be a string, got {type(description).__name__}"
     description = description.strip()
     if description:
-        # Check for angle brackets
         if "<" in description or ">" in description:
             return False, "Description cannot contain angle brackets (< or >)"
-        # Check description length (max 1024 characters per spec)
         if len(description) > 1024:
             return False, f"Description is too long ({len(description)} characters). Maximum is 1024 characters."
 
-    # Validate compatibility field if present (optional)
     compatibility = frontmatter.get("compatibility", "")
     if compatibility:
         if not isinstance(compatibility, str):
             return False, f"Compatibility must be a string, got {type(compatibility).__name__}"
         if len(compatibility) > 500:
             return False, f"Compatibility is too long ({len(compatibility)} characters). Maximum is 500 characters."
+
+    if content.count("---") < 2:
+        return False, "Frontmatter delimiters are incomplete"
+
+    for reserved_dir in ("references", "scripts", "agents", "assets"):
+        reserved_path = skill_path / reserved_dir
+        if reserved_path.exists() and not reserved_path.is_dir():
+            return False, f"{reserved_dir} exists but is not a directory"
 
     return True, "Skill is valid!"
 
