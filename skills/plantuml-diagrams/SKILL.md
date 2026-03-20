@@ -169,6 +169,21 @@ User -> API: GET /data
 
 **Notes:** `note left of A:`, `note right of A:`, `note over A,B:`
 
+**Line breaks in notes:**
+- Inline note syntax (`note right of A: line 1\nline 2`) supports `\n`
+- Block note syntax treats the body as literal text, so write actual line breaks instead of `\n`
+
+```puml
+' Inline note: \n works
+note right of API: line 1\nline 2
+
+' Block note: use real newlines
+note right of API
+line 1
+line 2
+end note
+```
+
 **Other:** `autonumber`, `== Divider ==`, `...delay...`, `|||` space, `box "Group" ... end box`
 
 ### Class / ER Diagram
@@ -395,6 +410,7 @@ List themes: `plantuml -help` shows available themes, or check https://the-lum.g
 | C4 macros not found | Include error | Verify `!include <C4/C4_Container>` path |
 | K8s sprites missing | Sprite not rendered | Check `!include <kubernetes/k8s-sprites-unlabeled-25pct>` |
 | Salt wireframe broken | Elements misaligned | Check brace matching, column separators `|` |
+| `\n` shows literally inside a note | Used block note syntax | Replace `\n` with real line breaks inside `note ... end note` |
 
 **When in doubt:**
 - Run `plantuml -checkonly` before rendering
@@ -425,6 +441,7 @@ List themes: `plantuml -help` shows available themes, or check https://the-lum.g
 - NEVER use `par/and` syntax — use `par/else` for parallel threads
 - NEVER use `activate`/`deactivate` without matching pairs
 - NEVER forget to close `box ... end box` groups
+- NEVER expect `\n` to render as a newline inside `note ... end note` blocks — use literal line breaks there
 
 **Class diagram errors:**
 - NEVER use `extends` with interface — use `implements` or `<|..`
@@ -463,3 +480,4 @@ List themes: `plantuml -help` shows available themes, or check https://the-lum.g
 - ALWAYS use quotes for names with spaces: `"My Service" as svc`
 - ALWAYS end activity actions with semicolon: `:action;`
 - ALWAYS close grouping blocks: `alt/else/end`, `if/endif`, `fork/end fork`
+- ALWAYS use literal line breaks in block notes (`note ... end note`); reserve `\n` for inline `note ... : ...` syntax
