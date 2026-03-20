@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { openMemoryClient } from "./client.js";
 import { log } from "./logger.js";
+import { mergeProjectMemories } from "./project-memory.js";
 import { CONFIG } from "../config.js";
-import type { MemoryScopeContext } from "../types/index.js";
+import type { MemoryItem, MemoryScopeContext } from "../types/index.js";
 
 const MESSAGE_STORAGE = join(homedir(), ".opencode", "messages");
 const PART_STORAGE = join(homedir(), ".opencode", "parts");
@@ -55,6 +56,11 @@ interface SummarizeContext {
 export interface CompactionOptions {
   threshold?: number;
   getModelLimit?: (providerID: string, modelID: string) => number | undefined;
+}
+
+interface DynamicProjectScopes {
+  projectScope: MemoryScopeContext;
+  projectReadScopes: MemoryScopeContext[];
 }
 
 function createCompactionPrompt(projectMemories: string[]): string {
@@ -256,7 +262,8 @@ export function createCompactionHook(
   ctx: CompactionContext,
   tags: { user: string; project: string },
   scopes: { user: MemoryScopeContext; project: MemoryScopeContext },
-  options?: CompactionOptions
+  options?: CompactionOptions,
+  resolveProjectScopes?: () => Promise<DynamicProjectScopes>
 ) {
   const state: CompactionState = {
     lastCompactionTime: new Map(),
@@ -267,11 +274,32 @@ export function createCompactionHook(
   const threshold = options?.threshold ?? DEFAULT_THRESHOLD;
   const getModelLimit = options?.getModelLimit;
 
+  function dedupeMemoryContent(memories: MemoryItem[]): string[] {
+    return mergeProjectMemories(memories, CONFIG.maxProjectMemories)
+      .map((memory) => (memory.content || "").trim())
+      .filter(Boolean);
+  }
+
   async function fetchProjectMemoriesForCompaction(): Promise<string[]> {
     try {
-      const result = await openMemoryClient.listMemories(scopes.project, { limit: CONFIG.maxProjectMemories });
-      const memories = result.memories || [];
-      return memories.map((m) => m.content || "").filter(Boolean);
+      const scopeState = resolveProjectScopes
+        ? await resolveProjectScopes()
+        : { projectScope: scopes.project, projectReadScopes: [scopes.project] };
+
+      const results = await Promise.all(
+        scopeState.projectReadScopes.map((scope) =>
+          openMemoryClient.listMemories(scope, { limit: CONFIG.maxProjectMemories })
+        )
+      );
+
+      const successful = results.filter((result) => result.success);
+      if (successful.length === 0) {
+        const failed = results.find((result) => !result.success);
+        throw new Error(failed?.error || "Failed to load project memories for compaction");
+      }
+
+      const memories = successful.flatMap((result) => result.memories || []);
+      return dedupeMemoryContent(memories);
     } catch (err) {
       log("[compaction] failed to fetch project memories", { error: String(err) });
       return [];
@@ -305,9 +333,13 @@ export function createCompactionHook(
     }
 
     try {
+      const scopeState = resolveProjectScopes
+        ? await resolveProjectScopes()
+        : { projectScope: scopes.project, projectReadScopes: [scopes.project] };
+
       const result = await openMemoryClient.addMemory(
         `[Session Summary]\n${summaryContent}`,
-        scopes.project,
+        scopeState.projectScope,
         { type: "conversation" }
       );
 

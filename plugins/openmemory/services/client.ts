@@ -49,6 +49,7 @@ interface OpenMemoryQueryResponse {
     path?: string;
     salience?: number;
     last_seen_at?: number;
+    metadata?: Record<string, unknown>;
   }>;
 }
 
@@ -143,6 +144,7 @@ export class OpenMemoryRESTClient implements IMemoryBackendClient {
         score: m.score ?? m.salience ?? 1,
         salience: m.salience,
         sector: m.primary_sector as MemorySector | undefined,
+        metadata: m.metadata,
       }));
 
       log("OpenMemoryREST.searchMemories: success", { count: memories.length });

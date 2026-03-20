@@ -4,13 +4,15 @@ import { tool } from "@opencode-ai/plugin";
 
 import { openMemoryClient, getMemoryClient } from "./services/client.js";
 import { formatContextForPrompt } from "./services/context.js";
-import { getScopes, getTags } from "./services/tags.js";
+import { resolveProjectScope } from "./services/tags.js";
+import { mergeProjectMemories, projectMemoryFingerprint } from "./services/project-memory.js";
 import { stripPrivateContent, isFullyPrivate } from "./services/privacy.js";
 import { createCompactionHook, type CompactionContext } from "./services/compaction.js";
+import { resolveProjectMemoryRuntimeState, runManualProjectMigration } from "./services/migration.js";
 
 import { isConfigured, CONFIG } from "./config.js";
 import { log } from "./services/logger.js";
-import type { MemoryScopeType, MemoryType, MemorySector } from "./types/index.js";
+import type { MemoryItem, MemoryScopeType, MemoryType, MemorySector } from "./types/index.js";
 
 const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const INLINE_CODE_PATTERN = /`[^`]+`/g;
@@ -45,17 +47,33 @@ function generatePartId(): string {
 
 export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
   const { directory } = ctx;
-  const scopes = getScopes(directory);
-  const tags = getTags(directory);
+  const initialScopeState = await resolveProjectScope(directory);
   const injectedSessions = new Set<string>();
-  log("Plugin init", { directory, scopes, configured: isConfigured() });
+  log("Plugin init", {
+    directory,
+    projectId: initialScopeState.projectId,
+    projectKind: initialScopeState.projectKind,
+    configured: isConfigured(),
+  });
 
   if (!isConfigured()) {
     log("Plugin disabled - OpenMemory not configured");
   }
 
   const compactionHook = isConfigured() && ctx.client
-    ? createCompactionHook(ctx as CompactionContext, tags, scopes)
+    ? createCompactionHook(
+        ctx as CompactionContext,
+        initialScopeState.tags,
+        { user: initialScopeState.userScope, project: initialScopeState.projectScope },
+        undefined,
+        async () => {
+          const runtimeState = await resolveProjectMemoryRuntimeState(directory);
+          return {
+            projectScope: runtimeState.scopes.project,
+            projectReadScopes: runtimeState.projectReadScopes,
+          };
+        }
+      )
     : null;
 
   return {
@@ -104,19 +122,23 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
 
         if (isFirstMessage) {
           injectedSessions.add(input.sessionID);
+          const runtimeState = await resolveProjectMemoryRuntimeState(directory);
 
           const [profileResult, userMemoriesResult, projectMemoriesListResult] = await Promise.all([
-            openMemoryClient.getProfile(scopes.user, userMessage),
-            openMemoryClient.searchMemories(userMessage, scopes.user, { limit: CONFIG.maxMemories }),
-            openMemoryClient.listMemories(scopes.project, { limit: CONFIG.maxProjectMemories }),
+            openMemoryClient.getProfile(runtimeState.scopes.user, userMessage),
+            openMemoryClient.searchMemories(userMessage, runtimeState.scopes.user, { limit: CONFIG.maxMemories }),
+            listProjectMemoriesAcrossScopes(runtimeState.projectReadScopes, {
+              limit: CONFIG.maxProjectMemories,
+            }),
           ]);
 
           const profile = profileResult.success ? profileResult : null;
           const userMemories = userMemoriesResult.success ? userMemoriesResult : { results: [] };
           const projectMemoriesList = projectMemoriesListResult.success ? projectMemoriesListResult : { memories: [] };
+          const dedupedProjectMemories = mergeProjectMemories(projectMemoriesList.memories || [], CONFIG.maxProjectMemories);
 
           const projectMemories = {
-            results: (projectMemoriesList.memories || []).map((m) => ({
+            results: dedupedProjectMemories.map((m) => ({
               id: m.id,
               content: m.content,
               score: m.salience || 1,
@@ -125,7 +147,7 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
               tags: m.tags,
               metadata: m.metadata,
             })),
-            total: projectMemoriesList.memories?.length || 0,
+            total: dedupedProjectMemories.length,
           };
 
           const memoryContext = formatContextForPrompt(
@@ -133,6 +155,28 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
             userMemories,
             projectMemories
           );
+
+          if (runtimeState.migrationNotice) {
+            const migrationPart: Part = {
+              id: generatePartId(),
+              sessionID: input.sessionID,
+              messageID: output.message.id,
+              type: "text",
+              text: runtimeState.migrationNotice,
+              synthetic: true,
+            };
+            output.parts.unshift(migrationPart);
+          } else if (projectMemoriesListResult.success && projectMemoriesListResult.partialError) {
+            const partialPart: Part = {
+              id: generatePartId(),
+              sessionID: input.sessionID,
+              messageID: output.message.id,
+              type: "text",
+              text: `[OPENMEMORY WARNING] Some project memory scopes could not be read: ${projectMemoriesListResult.partialError}`,
+              synthetic: true,
+            };
+            output.parts.unshift(partialPart);
+          }
 
           if (memoryContext) {
             const contextPart: Part = {
@@ -165,10 +209,11 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
           "Manage and query the OpenMemory persistent memory system. Use 'search' to find relevant memories, 'add' to store new knowledge, 'profile' to view user profile, 'list' to see recent memories, 'forget' to remove a memory, 'reinforce' to boost memory importance.",
         args: {
           mode: tool.schema
-            .enum(["add", "search", "profile", "list", "forget", "reinforce", "help"])
+            .enum(["add", "search", "profile", "list", "forget", "reinforce", "migrate", "help"])
             .optional(),
           content: tool.schema.string().optional(),
           query: tool.schema.string().optional(),
+          fromPaths: tool.schema.string().optional(),
           type: tool.schema
             .enum([
               "project-config",
@@ -191,6 +236,7 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
           mode?: string;
           content?: string;
           query?: string;
+          fromPaths?: string;
           type?: MemoryType;
           scope?: "user" | "project";
           sector?: MemorySector;
@@ -207,6 +253,8 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
           }
 
           const mode = args.mode || "help";
+          const runtimeState = await resolveProjectMemoryRuntimeState(directory);
+          const scopes = runtimeState.scopes;
 
           try {
             switch (mode) {
@@ -244,6 +292,11 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                       command: "reinforce",
                       description: "Boost memory importance",
                       args: ["memoryId", "boost?"],
+                    },
+                    {
+                      command: "migrate",
+                      description: "Migrate legacy path-scoped project memories into the git-root scope",
+                      args: ["fromPaths?"],
                     },
                   ],
                   scopes: {
@@ -309,6 +362,7 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                   scope: args.scope || "project",
                   sector: result.sector,
                   type: args.type,
+                  migrationNotice: runtimeState.migrationNotice,
                 });
               }
 
@@ -338,9 +392,9 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                 }
 
                 if (searchScope === "project") {
-                  const result = await openMemoryClient.searchMemories(
+                  const result = await searchProjectMemoriesAcrossScopes(
                     args.query,
-                    scopes.project,
+                    runtimeState.projectReadScopes,
                     { limit: args.limit, sector: args.sector }
                   );
                   if (!result.success) {
@@ -355,7 +409,7 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                 // Search both scopes
                 const [userResult, projectResult] = await Promise.all([
                   openMemoryClient.searchMemories(args.query, scopes.user, { limit: args.limit, sector: args.sector }),
-                  openMemoryClient.searchMemories(args.query, scopes.project, { limit: args.limit, sector: args.sector }),
+                  searchProjectMemoriesAcrossScopes(args.query, runtimeState.projectReadScopes, { limit: args.limit, sector: args.sector }),
                 ]);
 
                 if (!userResult.success || !projectResult.success) {
@@ -388,6 +442,7 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                     sector: r.sector,
                     scope: r.scope,
                   })),
+                  warning: "partialError" in projectResult ? projectResult.partialError : undefined,
                 });
               }
 
@@ -414,12 +469,40 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
               }
 
               case "list": {
-                const scope = args.scope === "user" ? scopes.user : scopes.project;
                 const limit = args.limit || 20;
 
-                const result = await openMemoryClient.listMemories(scope, { 
+                if (args.scope === "user") {
+                  const result = await openMemoryClient.listMemories(scopes.user, {
+                    limit,
+                    sector: args.sector,
+                  });
+
+                  if (!result.success) {
+                    return JSON.stringify({
+                      success: false,
+                      error: result.error || "Failed to list memories",
+                    });
+                  }
+
+                  const memories = result.memories || [];
+                  return JSON.stringify({
+                    success: true,
+                    scope: "user",
+                    count: memories.length,
+                    memories: memories.map((m) => ({
+                      id: m.id,
+                      content: m.content,
+                      sector: m.sector,
+                      salience: m.salience ? Math.round(m.salience * 100) : null,
+                      tags: m.tags,
+                      createdAt: m.createdAt,
+                    })),
+                  });
+                }
+
+                const result = await listProjectMemoriesAcrossScopes(runtimeState.projectReadScopes, {
                   limit,
-                  sector: args.sector 
+                  sector: args.sector
                 });
 
                 if (!result.success) {
@@ -430,20 +513,23 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                 }
 
                 const memories = result.memories || [];
-                return JSON.stringify({
-                  success: true,
-                  scope: args.scope || "project",
-                  count: memories.length,
-                  memories: memories.map((m) => ({
+                  return JSON.stringify({
+                    success: true,
+                    scope: args.scope || "project",
+                    count: memories.length,
+                    memories: memories.map((m) => ({
                     id: m.id,
                     content: m.content,
                     sector: m.sector,
                     salience: m.salience ? Math.round(m.salience * 100) : null,
                     tags: m.tags,
-                    createdAt: m.createdAt,
-                  })),
-                });
-              }
+                      createdAt: m.createdAt,
+                      projectId: m.metadata?.project_id,
+                    })),
+                    migrationNotice: runtimeState.migrationNotice,
+                    warning: result.partialError,
+                  });
+                }
 
               case "forget": {
                 if (!args.memoryId) {
@@ -453,12 +539,9 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                   });
                 }
 
-                const scope = args.scope === "user" ? scopes.user : scopes.project;
-
-                const result = await openMemoryClient.deleteMemory(
-                  args.memoryId,
-                  scope
-                );
+                const result = args.scope === "user"
+                  ? await openMemoryClient.deleteMemory(args.memoryId, scopes.user)
+                  : await forgetAcrossScopes(args.memoryId, runtimeState.projectReadScopes);
 
                 if (!result.success) {
                   return JSON.stringify({
@@ -470,6 +553,30 @@ export const OpenMemoryPlugin: Plugin = async (ctx: PluginInput) => {
                 return JSON.stringify({
                   success: true,
                   message: `Memory ${args.memoryId} removed from ${args.scope || "project"} scope`,
+                });
+              }
+
+              case "migrate": {
+                const result = await runManualProjectMigration(directory, args.fromPaths);
+                if (!result.success) {
+                  return JSON.stringify({
+                    success: false,
+                    error: result.error || "Project memory migration failed",
+                    targetProjectId: result.targetProjectId,
+                    stats: result.stats,
+                  });
+                }
+
+                return JSON.stringify({
+                  success: true,
+                  message: `Project memories migrated into ${result.targetProjectId}`,
+                  targetProjectId: result.targetProjectId,
+                  sources: (result.sources || []).map((source) => ({
+                    label: source.label,
+                    projectId: source.projectId,
+                    path: source.path,
+                  })),
+                  stats: result.stats,
                 });
               }
 
@@ -535,7 +642,8 @@ function formatSearchResults(
   query: string,
   scope: string | undefined,
   results: { results?: Array<{ id: string; content?: string; score?: number; salience?: number; sector?: string }> },
-  limit?: number
+  limit?: number,
+  warning?: string,
 ): string {
   const memoryResults = results.results || [];
   return JSON.stringify({
@@ -543,6 +651,7 @@ function formatSearchResults(
     query,
     scope,
     count: memoryResults.length,
+    warning,
     results: memoryResults.slice(0, limit || 10).map((r) => ({
       id: r.id,
       content: r.content,
@@ -551,6 +660,143 @@ function formatSearchResults(
       sector: r.sector,
     })),
   });
+}
+
+async function listProjectMemoriesAcrossScopes(
+  scopes: Array<{ userId: string; projectId?: string }>,
+  options?: { limit?: number; sector?: MemorySector }
+): Promise<{ success: boolean; memories: MemoryItem[]; error?: string; partialError?: string }> {
+  if (scopes.length <= 1) {
+    const result = await openMemoryClient.listMemories(scopes[0], { limit: options?.limit, sector: options?.sector });
+    return result.success
+      ? { success: true, memories: result.memories || [] }
+      : { success: false, memories: [], error: result.error || "Failed to list project memories" };
+  }
+
+  const results = await Promise.all(
+    scopes.map((scope) => openMemoryClient.listMemories(scope, { limit: options?.limit, sector: options?.sector }))
+  );
+
+  const successful = results.filter((result) => result.success);
+  if (successful.length === 0) {
+    const failed = results.find((result) => !result.success);
+    return { success: false, memories: [], error: failed?.error || "Failed to list project memories" };
+  }
+
+  const memories = successful.flatMap((result) => result.memories || []);
+  return {
+    success: true,
+    memories: mergeProjectMemories(memories, options?.limit || 20),
+    partialError: results.filter((result) => !result.success).map((result) => result.error).filter(Boolean).join("; ") || undefined,
+  };
+}
+
+async function searchProjectMemoriesAcrossScopes(
+  query: string,
+  scopes: Array<{ userId: string; projectId?: string }>,
+  options?: { limit?: number; sector?: MemorySector }
+): Promise<{ success: boolean; results: MemoryItem[]; error?: string; partialError?: string }> {
+  if (scopes.length <= 1) {
+    const result = await openMemoryClient.searchMemories(query, scopes[0], { limit: options?.limit, sector: options?.sector });
+    return result.success
+      ? { success: true, results: result.results || [] }
+      : { success: false, results: [], error: result.error || "Failed to search project memories" };
+  }
+
+  const results = await Promise.all(
+    scopes.map((scope) => openMemoryClient.searchMemories(query, scope, { limit: options?.limit, sector: options?.sector }))
+  );
+
+  const successful = results.filter((result) => result.success);
+  if (successful.length === 0) {
+    const failed = results.find((result) => !result.success);
+    return { success: false, results: [], error: failed?.error || "Failed to search project memories" };
+  }
+
+  const merged = mergeProjectMemories(successful.flatMap((result) => result.results || []), options?.limit || 10);
+  return {
+    success: true,
+    results: merged,
+    partialError: results.filter((result) => !result.success).map((result) => result.error).filter(Boolean).join("; ") || undefined,
+  };
+}
+
+async function forgetAcrossScopes(
+  memoryId: string,
+  scopes: Array<{ userId: string; projectId?: string }>
+): Promise<{ success: boolean; error?: string }> {
+  const scopeResults = await Promise.all(scopes.map((scope) => listAllProjectMemories(scope)));
+  const allMemories = scopeResults.flatMap((result) => result.memories);
+  const ownersById = new Map<string, Array<{ userId: string; projectId?: string }>>();
+
+  scopeResults.forEach((result, index) => {
+    for (const memory of result.memories) {
+      const owners = ownersById.get(memory.id) || [];
+      owners.push(scopes[index]);
+      ownersById.set(memory.id, owners);
+    }
+  });
+
+  const targetMemory = allMemories.find((memory) => memory.id === memoryId);
+  const idsToDelete = new Set<string>([memoryId]);
+
+  if (targetMemory) {
+    const fingerprint = projectMemoryFingerprint(targetMemory);
+    for (const memory of allMemories) {
+      if (projectMemoryFingerprint(memory) === fingerprint) {
+        idsToDelete.add(memory.id);
+      }
+    }
+  }
+
+  let removed = false;
+  let lastError: string | undefined;
+
+  for (const id of idsToDelete) {
+    const ownerScopes = ownersById.get(id) || scopes;
+    let deletedId = false;
+    let idError: string | undefined;
+    for (const scope of ownerScopes) {
+      const result = await openMemoryClient.deleteMemory(id, scope);
+      if (result.success) {
+        removed = true;
+        deletedId = true;
+      } else {
+        idError = result.error;
+      }
+    }
+
+    if (!deletedId) {
+      lastError = idError || lastError || `Failed to remove memory ${id}`;
+    }
+  }
+
+  if (removed) {
+    return { success: true };
+  }
+
+  return { success: false, error: lastError || "Failed to remove all matching project memories" };
+}
+
+async function listAllProjectMemories(scope: { userId: string; projectId?: string }): Promise<{ memories: MemoryItem[]; error?: string }> {
+  const memories: MemoryItem[] = [];
+  let offset = 0;
+
+  while (true) {
+    const result = await openMemoryClient.listMemories(scope, { limit: 200, offset });
+    if (!result.success) {
+      return { memories, error: result.error || `Failed to list scope ${scope.projectId || "user"}` };
+    }
+
+    const page = result.memories || [];
+    memories.push(...page);
+
+    if (page.length < 200) {
+      return { memories };
+    }
+
+    offset += page.length;
+  }
 }
 
 // Default export for backwards compatibility

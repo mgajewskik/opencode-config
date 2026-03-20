@@ -9,6 +9,7 @@
  */
 
 import { Database } from "bun:sqlite"
+import { createHash } from "node:crypto"
 import { mkdirSync } from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
@@ -67,19 +68,124 @@ const pendingDeleteSchema = z.object({
 // DATABASE UTILITIES
 // =============================================================================
 
+export type WorktreeLocationMode = "sibling" | "xdg-data"
+
+const MAX_WORKTREE_DIRNAME_BYTES = 255
+const WORKTREE_HASH_LENGTH = 8
+
+function shortWorktreeHash(value: string): string {
+	return createHash("sha256").update(value).digest("hex").slice(0, WORKTREE_HASH_LENGTH)
+}
+
+function slugifyBranchForDirectory(branch: string): string {
+	const slug = branch
+		.replace(/\//g, "-")
+		.replace(/[^A-Za-z0-9._-]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-+|-+$/g, "")
+
+	return slug || "worktree"
+}
+
+function byteLength(value: string): number {
+	return new TextEncoder().encode(value).length
+}
+
+function truncateUtf8(value: string, maxBytes: number): string {
+	if (maxBytes <= 0) return ""
+
+	let result = ""
+	for (const char of value) {
+		if (byteLength(result + char) > maxBytes) break
+		result += char
+	}
+
+	return result
+}
+
+function buildSiblingWorktreeDirName(repoName: string, branch: string, collisionSuffix?: string): string {
+	const branchSlug = slugifyBranchForDirectory(branch)
+	const collisionSegment = collisionSuffix ? `--${collisionSuffix}` : ""
+	const directName = `${repoName}--${branchSlug}${collisionSegment}`
+	if (byteLength(directName) <= MAX_WORKTREE_DIRNAME_BYTES) {
+		return directName
+	}
+
+	const branchHashSegment = `--${shortWorktreeHash(`branch:${branch}`)}`
+	let repoPart = repoName
+	let repoHashSegment = ""
+	let availableBranchBytes =
+		MAX_WORKTREE_DIRNAME_BYTES -
+		byteLength(`${repoPart}--`) -
+		byteLength(branchHashSegment) -
+		byteLength(collisionSegment)
+
+	if (availableBranchBytes <= 0) {
+		repoHashSegment = `--${shortWorktreeHash(`repo:${repoName}`)}`
+		const minBranchBytes = 1
+		const availableRepoBytes =
+			MAX_WORKTREE_DIRNAME_BYTES -
+			byteLength("--") -
+			minBranchBytes -
+			byteLength(repoHashSegment) -
+			byteLength(branchHashSegment) -
+			byteLength(collisionSegment)
+
+		if (availableRepoBytes <= 0) {
+			throw new Error(`Worktree directory name too long for repo '${repoName}'`)
+		}
+
+		repoPart = truncateUtf8(repoName, availableRepoBytes).replace(/-+$/g, "") || "repo"
+		availableBranchBytes =
+			MAX_WORKTREE_DIRNAME_BYTES -
+			byteLength(`${repoPart}${repoHashSegment}--`) -
+			byteLength(branchHashSegment) -
+			byteLength(collisionSegment)
+	}
+
+	if (availableBranchBytes <= 0) {
+		throw new Error(`Worktree directory name too long for repo '${repoName}'`)
+	}
+
+	const truncatedBranchSlug = truncateUtf8(branchSlug, availableBranchBytes).replace(/-+$/g, "") || "worktree"
+	const shortenedName = `${repoPart}${repoHashSegment}--${truncatedBranchSlug}${branchHashSegment}${collisionSegment}`
+
+	if (byteLength(shortenedName) > MAX_WORKTREE_DIRNAME_BYTES) {
+		throw new Error(`Worktree directory name too long for repo '${repoName}'`)
+	}
+
+	return shortenedName
+}
+
 /**
  * Get the worktree path for a given project and branch.
  *
  * @param projectRoot - Absolute path to the project root
  * @param branch - Branch name for the worktree
+ * @param mode - Location strategy for worktree placement
+ * @param collisionSuffix - Optional suffix used when a sanitized sibling path collides
  * @returns Absolute path to the worktree directory
  */
-export async function getWorktreePath(projectRoot: string, branch: string): Promise<string> {
+export async function getWorktreePath(
+	projectRoot: string,
+	branch: string,
+	mode: WorktreeLocationMode = "sibling",
+	collisionSuffix?: string,
+): Promise<string> {
 	if (!branch || typeof branch !== "string") {
 		throw new Error("branch is required")
 	}
-	const projectId = await getProjectId(projectRoot)
-	return path.join(os.homedir(), ".local", "share", "opencode", "worktree", projectId, branch)
+
+	if (mode === "xdg-data") {
+		const projectId = await getProjectId(projectRoot)
+		return path.join(os.homedir(), ".local", "share", "opencode", "worktree", projectId, branch)
+	}
+
+	const repoParent = path.dirname(projectRoot)
+	const repoName = path.basename(projectRoot)
+	const worktreeDirName = buildSiblingWorktreeDirName(repoName, branch, collisionSuffix)
+
+	return path.join(repoParent, worktreeDirName)
 }
 
 /**
@@ -153,7 +259,56 @@ export async function initStateDb(projectRoot: string): Promise<Database> {
 		)
 	`)
 
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS metadata (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		)
+	`)
+
 	return db
+}
+
+const CANONICAL_REPO_ROOT_KEY = "canonical_repo_root"
+const CANONICAL_REPO_COMMON_DIR_KEY = "canonical_repo_common_dir"
+
+function scopedMetadataKey(baseKey: string, commonDir: string): string {
+	return `${baseKey}:${shortWorktreeHash(commonDir)}`
+}
+
+function getMetadataValue(db: Database, key: string): string | null {
+	const stmt = db.prepare(`SELECT value FROM metadata WHERE key = $key`)
+	const row = stmt.get({ $key: key }) as { value: string } | null
+	return row?.value ?? null
+}
+
+function setMetadataValue(db: Database, key: string, value: string): void {
+	const stmt = db.prepare(`
+		INSERT OR REPLACE INTO metadata (key, value)
+		VALUES ($key, $value)
+	`)
+
+	stmt.run({
+		$key: key,
+		$value: value,
+	})
+}
+
+export function getStoredCanonicalRepoRoot(db: Database, commonDir: string): string | null {
+	if (!commonDir) return null
+	return getMetadataValue(db, scopedMetadataKey(CANONICAL_REPO_ROOT_KEY, commonDir))
+}
+
+export function getStoredCanonicalRepoCommonDir(db: Database, commonDir: string): string | null {
+	if (!commonDir) return null
+	return getMetadataValue(db, scopedMetadataKey(CANONICAL_REPO_COMMON_DIR_KEY, commonDir))
+}
+
+export function setStoredCanonicalRepoRoot(db: Database, repoRoot: string, commonDir?: string): void {
+	if (!repoRoot || !commonDir) return
+
+	setMetadataValue(db, scopedMetadataKey(CANONICAL_REPO_ROOT_KEY, commonDir), repoRoot)
+	setMetadataValue(db, scopedMetadataKey(CANONICAL_REPO_COMMON_DIR_KEY, commonDir), commonDir)
 }
 
 // =============================================================================

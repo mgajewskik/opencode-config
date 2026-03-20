@@ -116,6 +116,7 @@ export interface IMemoryBackendClient {
 
   listMemories(scope: MemoryScopeContext, options?: {
     limit?: number;
+    offset?: number;
     sector?: MemorySector;
   }): Promise<ListMemoriesResult>;
 

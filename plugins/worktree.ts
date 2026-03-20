@@ -12,7 +12,8 @@
  */
 
 import type { Database } from "bun:sqlite"
-import { access, copyFile, cp, mkdir, rm, stat, symlink } from "node:fs/promises"
+import { createHash } from "node:crypto"
+import { access, copyFile, cp, mkdir, readdir, readFile, rm, stat, symlink } from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
 import { type Plugin, tool } from "@opencode-ai/plugin"
@@ -34,12 +35,16 @@ import { getProjectId } from "./kdco-primitives/get-project-id"
 import {
 	addSession,
 	clearPendingDelete,
+	getStoredCanonicalRepoCommonDir,
+	getStoredCanonicalRepoRoot,
 	getPendingDelete,
 	getSession,
 	getWorktreePath,
 	initStateDb,
 	removeSession,
+	setStoredCanonicalRepoRoot,
 	setPendingDelete,
+	type WorktreeLocationMode,
 } from "./worktree/state"
 import { openTerminal } from "./worktree/terminal"
 
@@ -118,7 +123,35 @@ const branchNameSchema = z
  * Worktree plugin configuration schema.
  * Config files: ~/.config/opencode/worktree.jsonc and .opencode/worktree.jsonc
  */
+const worktreeLocationModeSchema = z.enum(["sibling", "xdg-data"])
+
+const worktreeConfigInputSchema = z.object({
+	location: z
+		.object({
+			mode: worktreeLocationModeSchema.optional(),
+		})
+		.optional(),
+	sync: z
+		.object({
+			copyFiles: z.array(z.string()).optional(),
+			symlinkDirs: z.array(z.string()).optional(),
+			exclude: z.array(z.string()).optional(),
+		})
+		.optional(),
+	hooks: z
+		.object({
+			postCreate: z.array(z.string()).optional(),
+			preDelete: z.array(z.string()).optional(),
+		})
+		.optional(),
+})
+
 const worktreeConfigSchema = z.object({
+	location: z
+		.object({
+			mode: worktreeLocationModeSchema.default("sibling"),
+		})
+		.default({ mode: "sibling" as WorktreeLocationMode }),
 	sync: z
 		.object({
 			/** Files to copy from main worktree (relative paths only) */
@@ -139,10 +172,12 @@ const worktreeConfigSchema = z.object({
 		.default(() => ({ postCreate: [], preDelete: [] })),
 })
 
+type WorktreeConfigInput = z.infer<typeof worktreeConfigInputSchema>
 type WorktreeConfig = z.infer<typeof worktreeConfigSchema>
 
 const defaultWorktreeConfig = (): WorktreeConfig =>
 	worktreeConfigSchema.parse({
+		location: { mode: "sibling" },
 		sync: { copyFiles: [], symlinkDirs: [], exclude: [] },
 		hooks: { postCreate: [], preDelete: [] },
 	})
@@ -442,12 +477,194 @@ async function branchExists(cwd: string, branch: string): Promise<boolean> {
 	return result.ok
 }
 
+async function resolveCurrentWorktreeRoot(cwd: string): Promise<Result<string, string>> {
+	const result = await git(["rev-parse", "--show-toplevel"], cwd)
+	return result.ok ? Result.ok(result.value) : Result.err(result.error)
+}
+
+async function resolveGitDirectory(cwd: string): Promise<Result<string, string>> {
+	const result = await git(["rev-parse", "--path-format=absolute", "--git-dir"], cwd)
+	return result.ok ? Result.ok(result.value) : Result.err(result.error)
+}
+
+async function resolveGitCommonDirectory(cwd: string): Promise<Result<string, string>> {
+	const result = await git(["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd)
+	return result.ok ? Result.ok(result.value) : Result.err(result.error)
+}
+
+async function resolveConfiguredCoreWorktreeRoot(commonDir: string): Promise<string | null> {
+	const configPath = path.join(commonDir, "config")
+	const result = await git(["config", "--file", configPath, "--get", "core.worktree"], commonDir)
+	if (!result.ok || !result.value) {
+		return null
+	}
+
+	const configuredPath = result.value.trim()
+
+	if (path.isAbsolute(configuredPath)) {
+		return configuredPath
+	}
+
+	return path.resolve(commonDir, configuredPath)
+}
+
+async function isCanonicalRepoRootCandidate(candidateRoot: string, commonDir: string): Promise<boolean> {
+	if (!(await pathExists(candidateRoot))) {
+		return false
+	}
+
+	const topLevelResult = await resolveCurrentWorktreeRoot(candidateRoot)
+	if (!topLevelResult.ok || topLevelResult.value !== candidateRoot) {
+		return false
+	}
+
+	const commonDirResult = await resolveGitCommonDirectory(candidateRoot)
+	return commonDirResult.ok && commonDirResult.value === commonDir
+}
+
+async function resolveGitFileTarget(gitFilePath: string): Promise<string | null> {
+	try {
+		const content = await readFile(gitFilePath, "utf8")
+		const match = content.match(/^gitdir:\s*(.+)$/m)
+		if (!match?.[1]) return null
+		return path.resolve(path.dirname(gitFilePath), match[1].trim())
+	} catch {
+		return null
+	}
+}
+
+async function findSiblingRepoRootForCommonDir(
+	currentWorktreeRoot: string,
+	commonDir: string,
+): Promise<string | null> {
+	try {
+		const parentDir = path.dirname(currentWorktreeRoot)
+		const entries = await readdir(parentDir, { withFileTypes: true })
+
+		for (const entry of entries) {
+			if (!entry.isDirectory()) continue
+
+			const candidateRoot = path.join(parentDir, entry.name)
+			if (candidateRoot === currentWorktreeRoot) continue
+
+			const candidateGitTarget = await resolveGitFileTarget(path.join(candidateRoot, ".git"))
+			if (
+				candidateGitTarget === commonDir &&
+				(await isCanonicalRepoRootCandidate(candidateRoot, commonDir))
+			) {
+				return candidateRoot
+			}
+		}
+	} catch {
+		return null
+	}
+
+	return null
+}
+
+async function resolveRepoRoot(
+	currentWorktreeRoot: string,
+	database: Database,
+	log: Logger,
+): Promise<Result<string, string>> {
+	const gitDirResult = await resolveGitDirectory(currentWorktreeRoot)
+	if (!gitDirResult.ok) {
+		return Result.ok(currentWorktreeRoot)
+	}
+
+	const commonDirResult = await resolveGitCommonDirectory(currentWorktreeRoot)
+	if (!commonDirResult.ok) {
+		return Result.ok(currentWorktreeRoot)
+	}
+
+	const gitDir = gitDirResult.value
+	const commonDir = commonDirResult.value
+	const storedRepoRoot = getStoredCanonicalRepoRoot(database, commonDir)
+	const storedCommonDir = getStoredCanonicalRepoCommonDir(database, commonDir)
+	if (
+		storedRepoRoot &&
+		storedCommonDir === commonDir &&
+		(await isCanonicalRepoRootCandidate(storedRepoRoot, commonDir))
+	) {
+		return Result.ok(storedRepoRoot)
+	}
+
+	if (gitDir === commonDir) {
+		setStoredCanonicalRepoRoot(database, currentWorktreeRoot, commonDir)
+		return Result.ok(currentWorktreeRoot)
+	}
+
+	const configuredCoreWorktreeRoot = await resolveConfiguredCoreWorktreeRoot(commonDir)
+	if (
+		configuredCoreWorktreeRoot &&
+		(await isCanonicalRepoRootCandidate(configuredCoreWorktreeRoot, commonDir))
+	) {
+		setStoredCanonicalRepoRoot(database, configuredCoreWorktreeRoot, commonDir)
+		return Result.ok(configuredCoreWorktreeRoot)
+	}
+
+	if (path.basename(commonDir) === ".git") {
+		const repoRoot = path.dirname(commonDir)
+		const candidateTopLevel = await resolveCurrentWorktreeRoot(repoRoot)
+		if (candidateTopLevel.ok && candidateTopLevel.value === repoRoot) {
+			setStoredCanonicalRepoRoot(database, repoRoot, commonDir)
+			return Result.ok(repoRoot)
+		}
+	}
+
+	const siblingRepoRoot = await findSiblingRepoRootForCommonDir(currentWorktreeRoot, commonDir)
+	if (siblingRepoRoot) {
+		setStoredCanonicalRepoRoot(database, siblingRepoRoot, commonDir)
+		return Result.ok(siblingRepoRoot)
+	}
+
+	log.warn(
+		`[worktree] Could not determine canonical repo root from shared git dir ${commonDir}; using current worktree root`,
+	)
+	return Result.ok(currentWorktreeRoot)
+}
+
+function getBranchCollisionSuffix(branch: string): string {
+	return createHash("sha256").update(branch).digest("hex").slice(0, 8)
+}
+
+async function resolveWorktreePath(
+	repoRoot: string,
+	branch: string,
+	locationMode: WorktreeLocationMode,
+): Promise<Result<string, string>> {
+	const defaultPath = await getWorktreePath(repoRoot, branch, locationMode)
+	if (locationMode !== "sibling" || !(await pathExists(defaultPath))) {
+		return Result.ok(defaultPath)
+	}
+
+	const collisionPath = await getWorktreePath(
+		repoRoot,
+		branch,
+		locationMode,
+		getBranchCollisionSuffix(branch),
+	)
+	if (!(await pathExists(collisionPath))) {
+		return Result.ok(collisionPath)
+	}
+
+	return Result.err(
+		`Worktree path already exists: ${defaultPath} (collision fallback also exists: ${collisionPath})`,
+	)
+}
+
 async function createWorktree(
 	repoRoot: string,
 	branch: string,
+	locationMode: WorktreeLocationMode,
 	baseBranch?: string,
 ): Promise<Result<string, string>> {
-	const worktreePath = await getWorktreePath(repoRoot, branch)
+	const worktreePathResult = await resolveWorktreePath(repoRoot, branch, locationMode)
+	if (!worktreePathResult.ok) {
+		return worktreePathResult
+	}
+
+	const worktreePath = worktreePathResult.value
 
 	// Ensure parent directory exists
 	await mkdir(path.dirname(worktreePath), { recursive: true })
@@ -615,6 +832,13 @@ const defaultWorktreeConfigText = `{
   // Worktree plugin configuration
   // Documentation: https://github.com/kdcokenny/ocx
 
+  "location": {
+    // Where new worktrees should be created.
+    // "sibling": create beside the main repo to inherit parent workspace config.
+    // "xdg-data": store under ~/.local/share/opencode/worktree/...
+    "mode": "sibling"
+  },
+
   "sync": {
     // Files to copy from main worktree to new worktrees
     // Example: [".env", ".env.local", "dev.sqlite"]
@@ -644,21 +868,36 @@ function mergeStringArrays(globalValues: string[], localValues: string[]): strin
 	return [...new Set([...globalValues, ...localValues])]
 }
 
-function mergeWorktreeConfigs(globalConfig: WorktreeConfig, localConfig: WorktreeConfig): WorktreeConfig {
+function mergeWorktreeConfigs(
+	globalConfig: WorktreeConfigInput,
+	localConfig: WorktreeConfigInput,
+): WorktreeConfig {
 	return worktreeConfigSchema.parse({
+		location: {
+			mode: localConfig.location?.mode ?? globalConfig.location?.mode,
+		},
 		sync: {
-			copyFiles: mergeStringArrays(globalConfig.sync.copyFiles, localConfig.sync.copyFiles),
-			symlinkDirs: mergeStringArrays(globalConfig.sync.symlinkDirs, localConfig.sync.symlinkDirs),
-			exclude: mergeStringArrays(globalConfig.sync.exclude, localConfig.sync.exclude),
+			copyFiles: mergeStringArrays(globalConfig.sync?.copyFiles ?? [], localConfig.sync?.copyFiles ?? []),
+			symlinkDirs: mergeStringArrays(
+				globalConfig.sync?.symlinkDirs ?? [],
+				localConfig.sync?.symlinkDirs ?? [],
+			),
+			exclude: mergeStringArrays(globalConfig.sync?.exclude ?? [], localConfig.sync?.exclude ?? []),
 		},
 		hooks: {
-			postCreate: mergeStringArrays(globalConfig.hooks.postCreate, localConfig.hooks.postCreate),
-			preDelete: mergeStringArrays(globalConfig.hooks.preDelete, localConfig.hooks.preDelete),
+			postCreate: mergeStringArrays(
+				globalConfig.hooks?.postCreate ?? [],
+				localConfig.hooks?.postCreate ?? [],
+			),
+			preDelete: mergeStringArrays(
+				globalConfig.hooks?.preDelete ?? [],
+				localConfig.hooks?.preDelete ?? [],
+			),
 		},
 	})
 }
 
-async function loadConfigFile(configPath: string, log: Logger): Promise<WorktreeConfig | null> {
+async function loadConfigFile(configPath: string, log: Logger): Promise<WorktreeConfigInput | null> {
 	try {
 		const file = Bun.file(configPath)
 		if (!(await file.exists())) return null
@@ -667,12 +906,19 @@ async function loadConfigFile(configPath: string, log: Logger): Promise<Worktree
 		const parsed = parseJsonc(content)
 		if (parsed === undefined) {
 			log.error(`[worktree] Invalid worktree config syntax: ${configPath}`)
-			return defaultWorktreeConfig()
+			return null
 		}
-		return worktreeConfigSchema.parse(parsed)
+
+		const validated = worktreeConfigInputSchema.safeParse(parsed)
+		if (!validated.success) {
+			log.error(`[worktree] Invalid worktree config shape: ${configPath}`)
+			return null
+		}
+
+		return validated.data
 	} catch (error) {
 		log.warn(`[worktree] Failed to load config ${configPath}: ${error}`)
-		return defaultWorktreeConfig()
+		return null
 	}
 }
 
@@ -681,9 +927,11 @@ async function loadConfigFile(configPath: string, log: Logger): Promise<Worktree
  * Merges global defaults with repo-local overrides when both are present.
  * Auto-creates a repo-local config only when neither config exists.
  */
-async function loadWorktreeConfig(directory: string, log: Logger): Promise<WorktreeConfig> {
+async function loadWorktreeConfig(repoRoot: string, log: Logger): Promise<WorktreeConfig> {
 	const globalConfigPath = path.join(os.homedir(), ".config", "opencode", "worktree.jsonc")
-	const localConfigPath = path.join(directory, ".opencode", "worktree.jsonc")
+	const localConfigPath = path.join(repoRoot, ".opencode", "worktree.jsonc")
+	const hasGlobalConfigFile = await pathExists(globalConfigPath)
+	const hasLocalConfigFile = await pathExists(localConfigPath)
 
 	const globalConfig = await loadConfigFile(globalConfigPath, log)
 	const localConfig = await loadConfigFile(localConfigPath, log)
@@ -695,20 +943,22 @@ async function loadWorktreeConfig(directory: string, log: Logger): Promise<Workt
 
 	if (localConfig) {
 		log.info(`[worktree] Loaded repo config: ${localConfigPath}`)
-		return localConfig
+		return worktreeConfigSchema.parse(localConfig)
 	}
 
 	if (globalConfig) {
 		log.info(`[worktree] Loaded global config: ${globalConfigPath}`)
-		return globalConfig
+		return worktreeConfigSchema.parse(globalConfig)
 	}
 
-	try {
-		await mkdir(path.join(directory, ".opencode"), { recursive: true })
-		await Bun.write(localConfigPath, defaultWorktreeConfigText)
-		log.info(`[worktree] Created default config: ${localConfigPath}`)
-	} catch (error) {
-		log.warn(`[worktree] Failed to create default config ${localConfigPath}: ${error}`)
+	if (!hasGlobalConfigFile && !hasLocalConfigFile) {
+		try {
+			await mkdir(path.join(repoRoot, ".opencode"), { recursive: true })
+			await Bun.write(localConfigPath, defaultWorktreeConfigText)
+			log.info(`[worktree] Created default config: ${localConfigPath}`)
+		} catch (error) {
+			log.warn(`[worktree] Failed to create default config ${localConfigPath}: ${error}`)
+		}
 	}
 
 	return defaultWorktreeConfig()
@@ -740,8 +990,20 @@ export const WorktreePlugin: Plugin = async (ctx) => {
 				.catch(() => {}),
 	}
 
-	// Initialize SQLite database
-	const database = await initDb(directory, log)
+	const currentWorktreeRootResult = await resolveCurrentWorktreeRoot(directory)
+	if (!currentWorktreeRootResult.ok) {
+		throw new WorktreeError(currentWorktreeRootResult.error, "resolveCurrentWorktreeRoot")
+	}
+	const currentWorktreeRoot = currentWorktreeRootResult.value
+
+	// Initialize SQLite database using the current worktree path; project identity is shared.
+	const database = await initDb(currentWorktreeRoot, log)
+
+	const repoRootResult = await resolveRepoRoot(currentWorktreeRoot, database, log)
+	if (!repoRootResult.ok) {
+		throw new WorktreeError(repoRootResult.error, "resolveRepoRoot")
+	}
+	const repoRoot = repoRootResult.value
 
 	return {
 		tool: {
@@ -772,8 +1034,15 @@ export const WorktreePlugin: Plugin = async (ctx) => {
 						}
 					}
 
+					const worktreeConfig = await loadWorktreeConfig(repoRoot, log)
+
 					// Create worktree
-					const result = await createWorktree(directory, args.branch, args.baseBranch)
+					const result = await createWorktree(
+						repoRoot,
+						args.branch,
+						worktreeConfig.location.mode,
+						args.baseBranch,
+					)
 					if (!result.ok) {
 						return `Failed to create worktree: ${result.error}`
 					}
@@ -781,8 +1050,7 @@ export const WorktreePlugin: Plugin = async (ctx) => {
 					const worktreePath = result.value
 
 					// Sync files from main worktree
-					const worktreeConfig = await loadWorktreeConfig(directory, log)
-					const mainWorktreePath = directory // The repo root is the main worktree
+					const mainWorktreePath = repoRoot
 
 					// Copy files
 					if (worktreeConfig.sync.copyFiles.length > 0) {
@@ -876,7 +1144,7 @@ export const WorktreePlugin: Plugin = async (ctx) => {
 				const { path: worktreePath, branch } = pendingDelete
 
 				// Run preDelete hooks before cleanup
-				const config = await loadWorktreeConfig(directory, log)
+				const config = await loadWorktreeConfig(repoRoot, log)
 				if (config.hooks.preDelete.length > 0) {
 					await runHooks(worktreePath, config.hooks.preDelete, log)
 				}
@@ -892,7 +1160,7 @@ export const WorktreePlugin: Plugin = async (ctx) => {
 				if (!commitResult.ok) log.warn(`[worktree] git commit failed: ${commitResult.error}`)
 
 				// Remove worktree
-				const removeResult = await removeWorktree(directory, worktreePath)
+				const removeResult = await removeWorktree(repoRoot, worktreePath)
 				if (!removeResult.ok) {
 					log.warn(`[worktree] Failed to remove worktree: ${removeResult.error}`)
 				}

@@ -1,6 +1,13 @@
 {
   "$schema": "https://registry.kdco.dev/schemas/worktree.json",
 
+  "location": {
+    // Where new worktrees should be created.
+    // "sibling": create beside the main repo to inherit parent workspace config.
+    // "xdg-data": store under ~/.local/share/opencode/worktree/...
+    "mode": "sibling"
+  },
+
   "sync": {
     // Files to copy from main worktree to new worktrees
     // Example: [".env", ".env.local", "dev.sqlite"]
