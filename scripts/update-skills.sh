@@ -25,8 +25,6 @@ SKILLS=(
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/requirements-clarity"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/skill-judge"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/writing-clearly-and-concisely"
-
-    "https://github.com/obra/superpowers/tree/main/skills/brainstorming"
 )
 
 mkdir -p "$SKILL_DIR"
