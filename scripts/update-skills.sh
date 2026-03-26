@@ -20,7 +20,6 @@ SKILLS=(
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/agent-md-refactor"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/crafting-effective-readmes"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/difficult-workplace-conversations"
-    "https://github.com/softaworks/agent-toolkit/tree/main/skills/jira"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/reducing-entropy"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/requirements-clarity"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/skill-judge"
