@@ -1,149 +1,125 @@
-## The Loop (Base Pattern for All Agents and Models)
+## Working Loop
 
-Use this as the default operating loop for any task that benefits from reasoning or verification.
+Run this loop inside each task and keep it alive across the conversation:
 
-Outer-loop framing: move from **Current State** to **Ideal State**.
+1. Observe
+2. Think
+3. Plan
+4. Execute
+5. Verify
+6. Learn
 
-### 0) Trigger and Context Boundary
+If criteria remain open or evidence is partial, continue the loop instead of declaring success.
 
-- Start this loop at a new task or explicit context switch.
+## 1) Observe
+
+- Recover task state from the best available current source.
 - Reuse same-session context first.
-- Do not re-query OpenMemory every turn; refresh only when context changed, uncertainty remains, or new durable memory was written.
+- Before editing, inspect nearby code to match existing structure, naming, and conventions.
+- Extract before acting:
+  - explicit requirements
+  - prohibitions and must-not rules
+  - constraints and thresholds
+  - assumptions and implied conventions
+  - non-goals when visible
+- Classify scope before choosing the path:
+  - `TRIVIAL`: typo, format, or single-line change
+  - `SIMPLE`: clear change in 1-2 files
+  - `MODERATE`: multiple files or behavior change
+  - `COMPLEX/HIGH-IMPACT`: architectural, risky, broad, or hard-to-reverse
+- Ask clarifying questions only when blocked by missing requirements, missing secrets or credentials, or an irreversible-risk decision.
+- Stop exploration when additional probes stop changing the decision.
 
-### 1) Context Recovery (Memory First)
+## 2) Think
 
-- Retrieve relevant user and project memory from OpenMemory at task start.
-- Prefer OpenMemory over file-based task storage for task continuity.
-- Keep active task state sparse: store it only for blocked, multi-turn, or likely-resumed work.
-- Treat memory as context, not proof; current code, command output, and tests win when memory conflicts.
+- Pressure-test the extracted requirements before editing.
+- Ask what the simplest solution would look like, then prefer it if it still satisfies the criteria.
+- Turn the extracted requirements into binary success criteria before editing.
+- For non-trivial work, add at least one anti-criterion that would catch a likely failure or regression.
+- Preserve explicit numeric thresholds and hard constraints verbatim.
+- Map every explicit requirement or prohibition to at least one criterion or anti-criterion before execution.
+- If a criterion cannot be verified, repair the plan before editing.
+- Run a short pre-mortem:
+  - what is most likely to fail
+  - what evidence would catch that failure
+  - whether satisfying the current criteria would actually satisfy user intent
 
-### 2) Observe and Classify
+## 3) Plan
 
-- Classify scope before acting:
-  - **TRIVIAL**: single-line, format, or typo change
-  - **SIMPLE/MODERATE**: clear change, limited files
-  - **COMPLEX/HIGH-IMPACT**: architectural, risky, or broad
-- Extract constraints before planning:
-  - `EX-Q`: quantitative limits and thresholds
-  - `EX-P`: prohibitions and must-not rules
-  - `EX-R`: mandatory requirements
-  - `EX-I`: implicit conventions and assumptions
-- Ask clarifying questions only when blocked by missing requirements, missing secrets, or irreversible-risk decisions.
+- Choose the smallest path that satisfies the criteria.
+- Avoid side quests and opportunistic refactors.
+- If the change appears to require more than 3 files, check whether it can be split into a smaller complete task.
+- Scope by task size:
+  - `TRIVIAL`: one-line plan, then execute
+  - `SIMPLE/MODERATE`: concise plan with files, intended edits, and validation
+  - `COMPLEX/HIGH-IMPACT`: phased plan, explicit risks, and user confirmation before broad or irreversible edits
+- If repeated rework in the same area is not improving the result, stop and report what is done, what is blocked, and the smallest next decision.
 
-### 3) Define Verifiable Ideal State Before Execution
+## 4) Execute
 
-- Turn extracted constraints into state-based, binary-testable criteria.
-- Add at least one anti-criterion for non-trivial work.
-- Preserve exact thresholds and hard constraints verbatim.
-- Map each explicit constraint to at least one criterion or anti-criterion before proceeding.
+- Make only the changes needed to satisfy the mapped criteria.
+- Preserve user changes outside the requested scope.
+- Prefer local evidence over recalled context when they conflict.
+- Keep changes easy to verify and easy to review.
+- Prefer editing or simplifying existing code paths over introducing new abstractions, new blocks, or duplicated logic.
+- Do not add backwards-compatibility fixes, shims, or migration layers unless the user explicitly asks for them.
+- Do not broaden scope just because adjacent cleanup is tempting.
 
-### 4) Plan and Execute the Smallest Effective Path
+## 5) Verify
 
-- **TRIVIAL**: one-line plan, then execute.
-- **SIMPLE/MODERATE**: concise plan with files, intended edits, and validation.
-- **COMPLEX/HIGH-IMPACT**: phased plan and explicit approval before editing files.
-- Keep scope to the requested objective.
-- Avoid opportunistic refactors.
-- If repeated rework in the same area does not improve the result, stop and report done, blocked, and the smallest next decision.
-
-### 5) Verify Mechanically with Evidence
-
-- Every PASS claim needs concrete evidence.
+- Verify every success criterion with concrete evidence.
+- Do not mark a criterion passed without evidence tied to files, commands, outputs, tests, or observed behavior.
+- For bug fixes, reproduce the failure with a test or deterministic probe first when practical, then verify the fix against that same check.
+- Tag claims with evidence:
+  - `inspected`
+  - `executed`
+  - `tested`
+  - `inferred`
+- Do not present inferred claims as proven facts.
+- Treat memory as context, not proof.
+- Treat current code, command output, tests, and observed behavior as higher-trust evidence than memory or recollection.
+- Separate facts, inferences, and unknowns.
 - Numeric constraints require actual value versus threshold.
 - Anti-criteria require explicit non-occurrence checks.
-- Separate proved facts from inferences and unknowns.
 - If evidence is partial, say so and name the smallest next probe.
+- If verification fails, return to the loop instead of rationalizing the result.
 
-### 6) Learn and Persist
+## 6) Learn
 
-- Write durable memory only when there is net-new reusable information and the learning is verified or user-confirmed.
-- Search for nearby memories before adding new ones; merge or reinforce instead of duplicating.
-- Prefer concise memories covering:
-  - user preferences
+- Persist durable learnings only after verification, explicit user confirmation, or a clearly validated correction.
+- Prefer memory for reusable information, not for full task transcripts.
+- Before writing a new memory, prefer reinforcing or updating an existing matching memory when possible.
+- Good memory candidates:
+  - stable user preferences
   - architecture decisions
-  - error -> solution mappings
-  - reusable patterns and pitfalls
-- For non-trivial work, use this shape:
-  - `summary`
-  - `decision`
-  - `tradeoff`
-  - `pitfall`
-  - `follow_up`
+  - verified error -> solution mappings
+  - reusable implementation patterns
+  - recurring pitfalls and their checks
+- Keep memory compact and high-signal.
+- If work is likely to resume, keep only the smallest useful recovery snapshot.
+- Never store secrets, credentials, tokens, or raw sensitive logs.
 
-### 7) Continue the Loop
+## Criteria Discipline
 
-- Carry forward open or failing criteria until done.
-- For the primary or orchestrator agent only, when a task is likely to resume, store a compact OpenMemory task snapshot with:
-  - goal
-  - constraints
-  - open criteria
-  - completed criteria
-  - last phase
-  - evidence summary
+- Criteria must be state-based and binary-testable.
+- Every explicit constraint must map to a success criterion or anti-criterion before edits begin.
+- For non-trivial work, include at least one anti-criterion that checks a likely regression, scope leak, or false positive.
+- Do not proceed on criteria that are vague, non-testable, or disconnected from the request.
+
+## Safety Defaults
+
+- Use `/tmp` on Linux and `$TMPDIR` on macOS for temporary files.
+- Do not install dependencies, download packages, or change external systems without approval.
+- Do not push, merge, rebase, or rewrite history unless explicitly requested.
+- Preserve user changes outside the requested scope.
+- When work is complete, say changes are ready and let the user decide when to commit.
+
+## End of Iteration
+
+- For non-trivial tasks, report:
+  - files changed
+  - criterion status
+  - anti-criterion checks
+  - evidence
   - unknowns
-  - next probe
-
-### Memory Hygiene Rules
-
-- Do NOT store secrets, credentials, tokens, or raw sensitive logs.
-- Avoid noisy task transcripts and low-signal summaries.
-- Use appropriate scope (`user` vs `project`) and memory type.
-- Prefer memory as a compact recovery aid, not as a second source of truth.
-
-## Response Explainability and Signal
-
-- In non-trivial responses, include context, reasoning, evidence, and concrete examples.
-- For codebase-specific claims, reference concrete files and symbols.
-- Prefer compact, high-signal output.
-- Keep the loop mostly invisible unless the user asks for process detail.
-
-## Bash Commands
-
-**File reading commands:**
-- FORBIDDEN for sensitive files: `cat`, `head`, `tail`, `less`, `more`, `bat`, `echo`, `printf`
-- PREFER the Read tool for general file reading
-- ALLOWED: Use bash when it is materially better for diagnostics and not exposing secrets
-
-## Temporary Files
-
-When creating temporary files or directories for testing or scratch work, use system temp directories:
-- **Linux**: `/tmp`
-- **macOS**: `$TMPDIR` (resolves to `/var/folders/.../T/`)
-
-Never create temp files in the project directory or home directory.
-
-## Context Management
-
-- **Use glob before reading** - Search for files without loading content into context.
-
-## Git Operations
-
-Never run mutating git operations without explicit user instruction.
-
-Do NOT auto-stage, commit, or push changes. Read-only git commands are allowed when needed for review or verification:
-- ALLOWED: `git status`, `git diff`, `git log`, `git show`
-- ALLOWED: `git branch -l`
-- FORBIDDEN: `git add`, `git commit`, `git push`, `git pull`
-- FORBIDDEN: `git merge`, `git rebase`, `git checkout`, `git branch`
-
-Mutating git commands only when:
-1. The user explicitly asks you to commit, push, or similar.
-2. The user invokes a git-specific command.
-3. The user says "commit these changes" or equivalent.
-
-When work is complete, inform the user that changes are ready and let them decide when to commit.
-
-## External Dependencies and Scripts
-
-**NEVER download or install packages without explicit user approval.**
-
-Before suggesting any installation or download:
-1. Ask first.
-2. Never use `curl | sh` or `wget | sh` patterns.
-3. Do not run package installers automatically.
-4. Prefer system package managers such as pacman or mise when appropriate.
-
-Required workflow:
-1. Identify the needed dependency.
-2. Ask the user how they want to install it.
-3. Wait for confirmation before proceeding.
+  - smallest next probe
