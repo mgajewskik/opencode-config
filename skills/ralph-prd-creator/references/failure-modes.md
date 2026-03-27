@@ -22,6 +22,7 @@
 **Prevention**:
 - Add to CLAUDE.md: "MUST NOT modify or delete existing tests. If tests fail, fix the implementation, not the tests."
 - Write specific test criteria: "Test covers case where input is empty and returns ErrNoInput"
+- Add anti-criteria such as: "Existing test files are not deleted, shortened, or weakened to make the story pass"
 - For TDD workflows: write tests BEFORE the loop starts, commit them, and make test files read-only in the agent's permissions.
 - Add a criterion: "No test file has fewer lines than before this story started" (detects test deletion).
 
@@ -37,6 +38,7 @@
 - Non-goals in CLAUDE.md: "MUST NOT implement: web UI, metrics, caching, multi-cluster support"
 - Story scoping: "Implement X. Do NOT add abstractions, interfaces, or generics beyond what this story requires."
 - Dependency approval: "MUST NOT add go.mod dependencies not listed in CLAUDE.md Tech Stack."
+- Add story-level anti-criteria that restate the most likely scope leaks for that story.
 
 **Detection**: Check `git diff --stat` for unexpected new files. Watch `go.sum` / `package.json` for unexpected dependencies.
 
@@ -47,12 +49,13 @@
 **Root cause**: Acceptance criteria only test the current story's functionality.
 
 **Prevention**:
-- Quality gates (build, test, lint) on EVERY story catch most regressions immediately.
+- Project quality gates on EVERY story catch most regressions immediately.
+- Add anti-criteria for unchanged behaviors that must remain true.
 - For critical projects, add to later stories: "All previously passing tests from US-001 through US-00N still pass."
-- Use `go test ./...` (all packages) rather than `go test ./internal/handler/` (one package).
+- Prefer the project's full test-suite command over a narrow subpath check when guarding against regressions.
 - Consider adding an integration/smoke test story as the final story that exercises the full system.
 
-**Detection**: Run the full test suite manually between iterations: `make test`.
+**Detection**: Run the project's full quality-gate commands manually between iterations.
 
 ## Failure 5: Context Exhaustion
 
@@ -90,6 +93,7 @@
 
 **Prevention**:
 - Be relentlessly specific in acceptance criteria.
+- Pull exact prohibitions and thresholds out of the conversation before writing stories.
 - Name exact error conditions: "Returns ErrNotFound when pod doesn't exist, ErrTimeout when probe exceeds --timeout, ErrForbidden when RBAC denies access."
 - Name exact test cases: "Test table includes: valid input, empty input, nil input, input exceeding max length."
 - Use the interview technique: before writing the PRD, ask yourself "what's the laziest possible interpretation of this criterion?" and close that loophole.
@@ -137,12 +141,16 @@ Before starting the loop, verify:
 - [ ] CLAUDE.md has MUST NOT rules for libraries and features
 - [ ] CLAUDE.md has explicit non-goals
 - [ ] prd.json has all stories with `passes: false`
-- [ ] Every acceptance criterion is a runnable command
-- [ ] Quality gates on every story
+- [ ] Root constraints extracted from the conversation are present in prd.json
+- [ ] Every acceptance criterion is a runnable command or concrete observable state
+- [ ] Every non-trivial story has anti-criteria
+- [ ] Quantitative criteria exist where real thresholds exist
+- [ ] Project quality gates on every story
 - [ ] `dependsOn` creates a valid DAG
-- [ ] Makefile targets match acceptance criteria commands
+- [ ] `supersedes` is used when later stories invalidate earlier ones
+- [ ] Task runner targets or directly runnable commands match acceptance criteria commands
 - [ ] Linter config committed and strict
-- [ ] Test framework installed and `make test` works (even if no tests yet)
+- [ ] Test framework installed and the project's full test command works (even if no tests yet)
 - [ ] Git repo initialized with initial commit
 - [ ] MAX_ITERATIONS set (not infinite)
 - [ ] progress.txt exists (empty, but exists)

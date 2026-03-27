@@ -66,9 +66,9 @@ Each Ralph iteration spawns a fresh agent with no memory of previous iterations.
 
 ## Dependency Ordering
 
-Stories MUST be ordered by dependency layer. The agent picks the highest-priority story with `passes: false` whose dependencies are all satisfied.
+Stories MUST be ordered by real dependencies. The agent picks the highest-priority story with `passes: false` whose dependencies are all satisfied.
 
-### Standard Layer Order
+### Common Dependency Pattern
 
 ```
 1. Scaffolding / Project Setup     (priority: 1)
@@ -89,6 +89,8 @@ Stories MUST be ordered by dependency layer. The agent picks the highest-priorit
 6. Polish / Documentation          (priority: 8-10)
    └── README, Dockerfile, CI config, examples
 ```
+
+Use this pattern only when it matches the real dependency graph. Do not force a layer-first plan if a smaller independently verifiable slice would be better.
 
 ### Parallel Tracks
 
@@ -121,23 +123,28 @@ Some stories touch multiple layers. Handle them by:
 
 ## Splitting Strategies
 
-### By Feature Slice (Preferred)
+### By Smallest Verifiable Slice (Preferred)
 
-Build end-to-end thin slices rather than horizontal layers.
+Prefer the smallest complete slice that leaves the codebase in a working state after each story.
+
+Often that is a vertical slice:
 
 ```
-✅ GOOD (vertical slices):
 US-001: CRD type + controller + test for RBACBinding
 US-002: CRD type + controller + test for NamespaceQuota
 US-003: Shared webhook validation
-
-❌ BAD (horizontal layers):
-US-001: All CRD types
-US-002: All controllers
-US-003: All tests
 ```
 
-Vertical slices keep the codebase in a working state after every story. Horizontal layers leave you with types but no logic, or logic but no tests.
+But layer-first stories are acceptable when the stack has hard sequencing constraints or scaffolding-heavy setup:
+
+```
+US-001: Project scaffolding + Makefile + lint config
+US-002: Core types/schema
+US-003: Core controller/handler logic
+US-004: Integration wiring
+```
+
+Rule: avoid horizontal batching that creates large, non-verifiable work packets such as "all controllers" or "all tests".
 
 ### By Risk
 
@@ -149,14 +156,7 @@ Each story should have a clear test boundary. If you can't write a test for a st
 
 ## Estimating Story Count
 
-| Project Scope       | Typical Stories | Estimated Iterations |
-|--------------------|----------------|---------------------|
-| Single CLI command  | 4-6            | 8-12                |
-| REST API service    | 8-12           | 15-25               |
-| K8s operator        | 6-10           | 12-20               |
-| Terraform module    | 4-8            | 8-16                |
-| Data pipeline       | 6-10           | 12-20               |
-| Full-stack MVP      | 15-25          | 30-50               |
+Use the rough iteration-range guidance in `references/prd-schema.md` as the canonical source.
 
 For projects with 15+ stories, consider splitting into multiple PRDs that build on each other (phase 1, phase 2) rather than one giant PRD.
 
@@ -168,6 +168,6 @@ The PRD is a living document. You can adjust it between iterations:
 - **Missing feature**: Add a new story with appropriate `dependsOn` and `priority`
 - **Wrong approach**: Set `passes` back to `false`, update notes with "Previous implementation used X, which doesn't work because Y. Use Z instead."
 - **Story done but wrong**: Set `passes` to `false`, add specific notes about what's wrong
-- **Scope change**: Add or remove stories, adjust priorities
+- **Scope change**: Add or remove stories, adjust priorities, and add `supersedes` when a new story invalidates an earlier one
 
 The agent reads the PRD fresh every iteration, so your changes take effect immediately.

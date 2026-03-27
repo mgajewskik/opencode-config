@@ -11,6 +11,12 @@ Anthropic's research on long-running agents found that agents are less likely to
   "project": "string — human-readable project name",
   "branchName": "string — kebab-case, prefixed with ralph/",
   "description": "string — one paragraph describing the feature and tech stack",
+  "constraints": {
+    "quantitative": ["exact thresholds and numeric limits from the conversation"],
+    "prohibitions": ["what must never happen"],
+    "requirements": ["what must happen"],
+    "assumptions": ["defaults, conventions, and non-goals that matter"]
+  },
   "userStories": [ "...array of story objects..." ]
 }
 ```
@@ -28,7 +34,18 @@ Anthropic's research on long-running agents found that agents are less likely to
 
 This field is read by the agent on EVERY iteration. Keep it under 200 words.
 
+**constraints**: Compact extraction of the conversation's decision-relevant constraints. Keep it high-signal only.
+
+- `quantitative`: explicit numeric thresholds, budgets, concurrency limits, coverage targets, size limits, latency SLOs
+- `prohibitions`: scope boundaries, must-not rules, forbidden dependencies, forbidden behaviors
+- `requirements`: hard requirements that must be satisfied somewhere in the PRD
+- `assumptions`: implicit defaults, conventions, and non-goals that shape implementation
+
+If a category has nothing useful, use an empty array rather than inventing filler.
+
 ## User Story Schema
+
+The example below uses Go-flavored quality gates for illustration. Replace them with the real quality gates for your stack.
 
 ```json
 {
@@ -42,11 +59,25 @@ This field is read by the agent on EVERY iteration. Keep it under 200 words.
     "Quality gate: go test ./... -v passes",
     "Quality gate: golangci-lint run exits 0"
   ],
+  "antiCriteria": [
+    "Must not modify or weaken existing test assertions",
+    "Must not add dependencies outside the approved stack"
+  ],
+  "quantitativeCriteria": [
+    "Coverage on pkg/handler remains >=80%",
+    "p95 latency stays <200ms for 1000 records"
+  ],
   "effort": "low | medium | high",
   "priority": 1,
   "passes": false,
   "notes": "",
-  "dependsOn": []
+  "dependsOn": [],
+  "supersedes": [
+    {
+      "storyId": "US-000",
+      "reason": "Replaces an earlier temporary or obsolete requirement"
+    }
+  ]
 }
 ```
 
@@ -61,8 +92,20 @@ This field is read by the agent on EVERY iteration. Keep it under 200 words.
 **acceptanceCriteria**: The most critical field. This is how the agent knows it's done. Rules:
 - Every item must be machine-verifiable (a command or concrete observable state)
 - Functional criteria FIRST, quality gates LAST
-- Quality gates (build, test, lint) MUST appear on every story
+- Project quality gates from the user's stack MUST appear on every story
 - See `references/acceptance-criteria.md` for language-specific examples
+
+**antiCriteria**: Explicit failure boundaries. Use this field for things the agent must NOT do while satisfying the story. Rules:
+
+- Include at least one anti-criterion for every non-trivial story
+- Prefer concrete non-occurrence checks over vague warnings
+- Good examples: test files must not shrink, forbidden dependency must not appear, existing endpoint response must not change
+
+**quantitativeCriteria**: Numeric thresholds and measurable limits. Use this field when the conversation, domain, or tooling provides a real number. Rules:
+
+- Preserve user-provided numbers verbatim
+- If the user gave no real threshold, leave the array empty instead of inventing one
+- Prefer checks with explicit units: ms, MB, %, seconds, concurrency counts
 
 **effort**: Estimation for iteration planning.
 - `low`: Scaffolding, config, single-file changes. Usually 1 iteration.
@@ -71,7 +114,7 @@ This field is read by the agent on EVERY iteration. Keep it under 200 words.
 
 **priority**: Integer. Lower number = higher priority = executed first. The agent picks the highest-priority story where `passes: false` and all `dependsOn` stories have `passes: true`. Use priority to enforce dependency ordering when stories at the same layer could go in either order.
 
-**passes**: Boolean. Starts `false`. Agent flips to `true` after all acceptance criteria pass. You can flip it back to `false` to force a redo (add notes explaining why). The loop exits only when ALL stories have `passes: true`.
+**passes**: Boolean. Starts `false`. Agent flips to `true` after the story's acceptance, anti-, and quantitative criteria are satisfied. You can flip it back to `false` to force a redo (add notes explaining why). The loop exits only when ALL stories have `passes: true`.
 
 **notes**: Agent-writable field for inter-iteration memory. The agent records:
 - What was accomplished
@@ -85,6 +128,21 @@ You can also pre-populate notes with hints: "Use the existing helper in internal
 - `[]` — no dependencies, can be picked first
 - `["US-001"]` — depends on scaffolding
 - `["US-003", "US-004"]` — depends on multiple prior stories
+
+**supersedes**: Optional list of earlier stories this story invalidates or replaces. Use it only when a later story makes an earlier requirement obsolete, not for normal dependency flow.
+
+```json
+[
+  {
+    "storyId": "US-003",
+    "reason": "Replaces the temporary filesystem config approach with S3-backed config"
+  }
+]
+```
+
+Canonical direction is forward-looking: put `supersedes` on the new story. The later story wins if its requirements conflict with the superseded story.
+
+Use this field only for full story replacement or invalidation. If only one old criterion became obsolete, split that temporary behavior into its own story or rewrite the old story instead of superseding a mostly-still-valid story.
 
 ### Schema Anti-Patterns (DO NOT USE)
 
@@ -100,6 +158,12 @@ You can also pre-populate notes with hints: "Use the existing helper in internal
 
 // ❌ WRONG: nested phases/milestones
 { "phases": [{ "stories": [...] }] }
+
+// ❌ WRONG: inventing fake quantitative precision
+{ "quantitativeCriteria": ["Response time < 137ms"] }
+
+// ❌ WRONG: using supersedes as a normal dependency marker
+{ "supersedes": [{ "storyId": "US-001", "reason": "Needs US-001 first" }] }
 ```
 
 The PRD MUST be a flat JSON object with `userStories` at the root level. Even if you think in phases, flatten everything into a single array and use `dependsOn` + `priority` for ordering.
@@ -120,11 +184,14 @@ git log --oneline -20
 
 # Count remaining work
 cat prd.json | jq '[.userStories[] | select(.passes == false)] | length'
+
+# See supersession relationships
+cat prd.json | jq '.userStories[] | select((.supersedes // []) | length > 0) | {id, supersedes}'
 ```
 
 ## Iteration Estimation
 
-Total iterations ≈ (sum of story efforts) × 1.3 safety factor
+Do not invent math from `low | medium | high` effort labels. Use a rough range based on story count and effort mix.
 
 | Stories | Average Effort | Estimated Iterations | Suggested Max |
 |---------|---------------|---------------------|---------------|
@@ -133,4 +200,4 @@ Total iterations ≈ (sum of story efforts) × 1.3 safety factor
 | 8-12    | mixed         | 14-20               | 35            |
 | 12+     | mixed         | 20+                 | 50            |
 
-Always set a max iteration cap. Infinite loops with stochastic systems burn money.
+Treat these as planning bands, not precise forecasts. Always set a max iteration cap. Infinite loops with stochastic systems burn money.

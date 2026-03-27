@@ -1,31 +1,80 @@
 {
   "project": "kube-healthcheck",
   "branchName": "ralph/kube-healthcheck-cli",
-  "description": "CLI tool that queries Kubernetes health endpoints across namespaces, aggregates results, and outputs a summary. Built with Go 1.23, Cobra CLI, client-go. Supports kubeconfig context switching, concurrent probing, JSON and table output formats. Exit code 0 when all healthy, 1 when any unhealthy.",
+  "description": "CLI tool that queries Kubernetes health endpoints across namespaces, aggregates results, and outputs a summary. Built with Go 1.23, Cobra CLI, client-go, slog, testify, and golang.org/x/sync/errgroup. Supports kubeconfig context switching, concurrent probing, JSON and table output formats. Exit code 0 when all healthy, 1 when any unhealthy.",
+  "constraints": {
+    "quantitative": [
+      "Final container image stays under 20 MiB",
+      "Default probe concurrency is 10",
+      "Default probe timeout is 5s"
+    ],
+    "prohibitions": [
+      "MUST NOT add a web UI, database, or metrics endpoint",
+      "MUST NOT modify or weaken existing test assertions to make a story pass",
+      "MUST NOT add runtime dependencies outside Cobra, client-go, slog, testify, and golang.org/x/sync without approval"
+    ],
+    "requirements": [
+      "MUST support kubeconfig path and context selection",
+      "MUST support JSON and table output",
+      "MUST return exit code 1 when any pod is unhealthy"
+    ],
+    "assumptions": [
+      "CLI only; no persistent state",
+      "Single-cluster scope for this phase"
+    ]
+  },
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize project with Go module and Cobra CLI skeleton",
-      "description": "As a developer, I need a clean Go project with Cobra CLI scaffolding so that I can build commands incrementally.",
+      "title": "Initialize Go module and root CLI",
+      "description": "As a developer, I need a clean Go project with the root Cobra CLI so that later stories can add behavior incrementally.",
       "acceptanceCriteria": [
         "go.mod initialized with module github.com/user/kube-healthcheck",
         "cmd/root.go sets up Cobra root command with --kubeconfig and --context persistent flags",
-        "cmd/check.go defines 'check' subcommand with placeholder that prints 'not implemented'",
         "main.go calls cmd.Execute()",
-        "Makefile has targets: build, test, lint, clean",
-        ".golangci-lint.yaml exists with errcheck, govet, staticcheck enabled",
         "go build ./... exits 0",
-        "go vet ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not add runtime behavior beyond root CLI setup",
+        "Does not introduce dependencies outside Cobra, slog, testify, and golangci-lint tooling"
+      ],
+      "quantitativeCriteria": [],
       "effort": "low",
       "priority": 1,
       "passes": false,
       "notes": "",
-      "dependsOn": []
+      "dependsOn": [],
+      "supersedes": []
     },
     {
       "id": "US-002",
+      "title": "Add check subcommand and toolchain",
+      "description": "As a developer, I need the check subcommand and quality tooling scaffolded so that later stories can add real behavior safely.",
+      "acceptanceCriteria": [
+        "cmd/check.go defines a 'check' subcommand and wires it into the root command",
+        "Running ./kube-healthcheck check --help prints usage",
+        "Makefile has targets: build, test, lint, clean",
+        ".golangci-lint.yaml exists with errcheck, govet, staticcheck enabled",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "antiCriteria": [
+        "Does not implement discovery, probing, or reporting behavior yet",
+        "Does not introduce dependencies outside Cobra, slog, testify, and golangci-lint tooling"
+      ],
+      "quantitativeCriteria": [],
+      "effort": "low",
+      "priority": 2,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-001"],
+      "supersedes": []
+    },
+    {
+      "id": "US-003",
       "title": "Kubernetes client initialization from kubeconfig",
       "description": "As a user, I want the tool to connect to my cluster using my kubeconfig so that I don't need separate auth config.",
       "acceptanceCriteria": [
@@ -39,36 +88,48 @@
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not hardcode kubeconfig paths or cluster credentials in source",
+        "Does not bypass the --context flag when it is provided"
+      ],
+      "quantitativeCriteria": [],
       "effort": "medium",
-      "priority": 2,
+      "priority": 3,
       "passes": false,
       "notes": "",
-      "dependsOn": ["US-001"]
+      "dependsOn": ["US-002"],
+      "supersedes": []
     },
     {
-      "id": "US-003",
+      "id": "US-004",
       "title": "Pod discovery across namespaces",
       "description": "As a user, I want the tool to find pods with health probes so that I get a cluster-wide health view.",
       "acceptanceCriteria": [
         "internal/kube/discovery.go exports DiscoverPods(ctx, clientset, namespaces []string, allNamespaces bool) ([]PodInfo, error)",
         "PodInfo struct includes: Name, Namespace, HealthEndpoint (path+port from readiness/liveness probe), ProbeType (readiness|liveness)",
-        "When --all-namespaces, lists pods across all namespaces",
-        "When --namespace=ns1,ns2, lists pods only in specified namespaces",
-        "When neither flag set, uses current kubeconfig namespace",
+        "When allNamespaces=true, lists pods across all namespaces",
+        "When allNamespaces=false and namespaces=[ns1,ns2], lists pods only in those namespaces",
+        "When allNamespaces=false and namespaces is empty, uses the caller-provided default namespace",
         "Only returns pods that have HTTP GET readiness or liveness probes defined",
         "Unit test uses fake kubernetes.Clientset with test fixtures",
         "go build ./... exits 0",
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not return pods without HTTP GET readiness or liveness probes",
+        "Does not ignore namespace filters when --namespace or --all-namespaces is set"
+      ],
+      "quantitativeCriteria": [],
       "effort": "medium",
-      "priority": 3,
+      "priority": 4,
       "passes": false,
       "notes": "",
-      "dependsOn": ["US-002"]
+      "dependsOn": ["US-003"],
+      "supersedes": []
     },
     {
-      "id": "US-004",
+      "id": "US-005",
       "title": "Concurrent health probing with timeout",
       "description": "As a user, I want health checks to run in parallel so that the tool is fast even with many pods.",
       "acceptanceCriteria": [
@@ -76,68 +137,91 @@
         "ProbeResult struct includes: PodInfo, StatusCode int, Latency time.Duration, Error error, Healthy bool",
         "Healthy is true when StatusCode is 200, false otherwise",
         "Uses errgroup with semaphore pattern for concurrency limiting",
-        "--concurrency flag controls max parallel probes (default: 10)",
-        "--timeout flag controls per-probe timeout (default: 5s)",
+        "concurrency argument controls max parallel probes",
+        "timeout argument controls per-probe timeout",
         "Probes that timeout return Error with context.DeadlineExceeded and Healthy=false",
         "go test -race ./internal/kube/ passes (no race conditions)",
         "go build ./... exits 0",
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not spawn more concurrent probes than the configured --concurrency value",
+        "Does not report timed-out probes as healthy"
+      ],
+      "quantitativeCriteria": [
+        "Default probe concurrency is exactly 10",
+        "Default per-probe timeout is exactly 5s"
+      ],
       "effort": "high",
-      "priority": 4,
+      "priority": 5,
       "passes": false,
       "notes": "Use port-forwarding or in-cluster direct pod IP access for probing. The probe approach should be noted in progress.txt for future iterations.",
-      "dependsOn": ["US-003"]
+      "dependsOn": ["US-004"],
+      "supersedes": []
     },
     {
-      "id": "US-005",
+      "id": "US-006",
       "title": "Aggregate results and format output",
-      "description": "As a user, I want health check results in a readable format so that I can quickly spot unhealthy services.",
+      "description": "As a user, I want health check results formatted independently of the probing implementation so that output behavior can be built and tested in parallel.",
       "acceptanceCriteria": [
-        "internal/report/report.go exports FormatResults(results []ProbeResult, format string) (string, error)",
+        "internal/report/report.go exports FormatResults(rows []ResultRow, format string) (string, error)",
+        "ResultRow struct includes: Namespace, Pod, Endpoint, Status, Latency, Healthy",
         "Summary struct includes: TotalPods, HealthyCount, UnhealthyCount, PerNamespace map[string]NamespaceSummary",
-        "--output=json produces valid JSON to stdout (parseable by jq)",
-        "--output=table produces aligned table with columns: NAMESPACE | POD | ENDPOINT | STATUS | LATENCY",
+        "format=\"json\" returns valid JSON (parseable by jq)",
+        "format=\"table\" returns an aligned table with columns: NAMESPACE | POD | ENDPOINT | STATUS | LATENCY",
         "Table output lists unhealthy pods first, then healthy pods",
-        "Exit code 1 when any pod is unhealthy, exit code 0 when all healthy",
         "Unit tests cover both JSON and table output with sample data including healthy and unhealthy pods",
         "go build ./... exits 0",
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not emit invalid JSON when format=\"json\" is selected",
+        "Does not reorder table output to hide unhealthy pods below healthy ones"
+      ],
+      "quantitativeCriteria": [],
       "effort": "medium",
-      "priority": 5,
+      "priority": 6,
       "passes": false,
       "notes": "",
-      "dependsOn": ["US-004"]
+      "dependsOn": ["US-004"],
+      "supersedes": []
     },
     {
-      "id": "US-006",
+      "id": "US-007",
       "title": "Wire everything in the check command",
       "description": "As a user, I want to run a single command that discovers, probes, and reports so that the tool is usable end-to-end.",
       "acceptanceCriteria": [
         "cmd/check.go wires together: client init → discovery → probing → formatting → output",
         "All flags registered: --kubeconfig, --context, --namespace, --all-namespaces, --concurrency, --timeout, --output",
+        "--output=json writes valid JSON to stdout",
+        "--output=table writes an aligned table to stdout",
+        "Exit code 1 when any pod is unhealthy, exit code 0 when all healthy",
         "Running ./kube-healthcheck check --help shows all flags with descriptions",
         "Errors at any stage produce descriptive message to stderr and exit code 1",
         "go build ./... exits 0",
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not bypass client init, discovery, probing, or reporting stages",
+        "Does not print operational errors to stdout"
+      ],
+      "quantitativeCriteria": [],
       "effort": "medium",
-      "priority": 6,
+      "priority": 7,
       "passes": false,
       "notes": "",
-      "dependsOn": ["US-005"]
+      "dependsOn": ["US-005", "US-006"],
+      "supersedes": []
     },
     {
-      "id": "US-007",
+      "id": "US-008",
       "title": "Dockerfile and README",
       "description": "As a DevOps engineer, I want a container image and usage docs so that the tool can run in CI pipelines.",
       "acceptanceCriteria": [
         "Dockerfile uses multi-stage build: golang:1.23-alpine builder, alpine:3.20 runtime",
-        "Final image is under 20MB (check with docker images | grep kube-healthcheck)",
         "docker build -t kube-healthcheck . exits 0",
         "docker run --rm kube-healthcheck --help exits 0 and prints usage",
         "README.md documents: installation (go install + docker), all flags, output formats, exit codes",
@@ -147,11 +231,19 @@
         "go test ./... -v -count=1 passes with no failures",
         "golangci-lint run exits 0"
       ],
+      "antiCriteria": [
+        "Does not use a single-stage Docker build that leaves Go toolchain artifacts in the runtime image",
+        "Does not document flags or exit codes that the CLI does not actually support"
+      ],
+      "quantitativeCriteria": [
+        "`docker image inspect kube-healthcheck --format '{{.Size}}'` returns a value < 20971520"
+      ],
       "effort": "medium",
-      "priority": 7,
+      "priority": 8,
       "passes": false,
       "notes": "",
-      "dependsOn": ["US-006"]
+      "dependsOn": ["US-007"],
+      "supersedes": []
     }
   ]
 }
