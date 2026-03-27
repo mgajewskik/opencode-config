@@ -1,0 +1,157 @@
+{
+  "project": "kube-healthcheck",
+  "branchName": "ralph/kube-healthcheck-cli",
+  "description": "CLI tool that queries Kubernetes health endpoints across namespaces, aggregates results, and outputs a summary. Built with Go 1.23, Cobra CLI, client-go. Supports kubeconfig context switching, concurrent probing, JSON and table output formats. Exit code 0 when all healthy, 1 when any unhealthy.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Initialize project with Go module and Cobra CLI skeleton",
+      "description": "As a developer, I need a clean Go project with Cobra CLI scaffolding so that I can build commands incrementally.",
+      "acceptanceCriteria": [
+        "go.mod initialized with module github.com/user/kube-healthcheck",
+        "cmd/root.go sets up Cobra root command with --kubeconfig and --context persistent flags",
+        "cmd/check.go defines 'check' subcommand with placeholder that prints 'not implemented'",
+        "main.go calls cmd.Execute()",
+        "Makefile has targets: build, test, lint, clean",
+        ".golangci-lint.yaml exists with errcheck, govet, staticcheck enabled",
+        "go build ./... exits 0",
+        "go vet ./... exits 0",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "low",
+      "priority": 1,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-002",
+      "title": "Kubernetes client initialization from kubeconfig",
+      "description": "As a user, I want the tool to connect to my cluster using my kubeconfig so that I don't need separate auth config.",
+      "acceptanceCriteria": [
+        "internal/kube/client.go exports NewClient(kubeconfigPath, context string) (*kubernetes.Clientset, error)",
+        "Respects --kubeconfig flag first, then KUBECONFIG env var, then ~/.kube/config",
+        "Respects --context flag to override kubeconfig's current-context",
+        "Returns descriptive error when kubeconfig file doesn't exist",
+        "Returns descriptive error when specified context doesn't exist in kubeconfig",
+        "Unit test with table-driven cases covers: explicit path, env var fallback, default path, missing file, bad context",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "medium",
+      "priority": 2,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-001"]
+    },
+    {
+      "id": "US-003",
+      "title": "Pod discovery across namespaces",
+      "description": "As a user, I want the tool to find pods with health probes so that I get a cluster-wide health view.",
+      "acceptanceCriteria": [
+        "internal/kube/discovery.go exports DiscoverPods(ctx, clientset, namespaces []string, allNamespaces bool) ([]PodInfo, error)",
+        "PodInfo struct includes: Name, Namespace, HealthEndpoint (path+port from readiness/liveness probe), ProbeType (readiness|liveness)",
+        "When --all-namespaces, lists pods across all namespaces",
+        "When --namespace=ns1,ns2, lists pods only in specified namespaces",
+        "When neither flag set, uses current kubeconfig namespace",
+        "Only returns pods that have HTTP GET readiness or liveness probes defined",
+        "Unit test uses fake kubernetes.Clientset with test fixtures",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "medium",
+      "priority": 3,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-002"]
+    },
+    {
+      "id": "US-004",
+      "title": "Concurrent health probing with timeout",
+      "description": "As a user, I want health checks to run in parallel so that the tool is fast even with many pods.",
+      "acceptanceCriteria": [
+        "internal/kube/probe.go exports ProbePods(ctx, pods []PodInfo, concurrency int, timeout time.Duration) ([]ProbeResult, error)",
+        "ProbeResult struct includes: PodInfo, StatusCode int, Latency time.Duration, Error error, Healthy bool",
+        "Healthy is true when StatusCode is 200, false otherwise",
+        "Uses errgroup with semaphore pattern for concurrency limiting",
+        "--concurrency flag controls max parallel probes (default: 10)",
+        "--timeout flag controls per-probe timeout (default: 5s)",
+        "Probes that timeout return Error with context.DeadlineExceeded and Healthy=false",
+        "go test -race ./internal/kube/ passes (no race conditions)",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "high",
+      "priority": 4,
+      "passes": false,
+      "notes": "Use port-forwarding or in-cluster direct pod IP access for probing. The probe approach should be noted in progress.txt for future iterations.",
+      "dependsOn": ["US-003"]
+    },
+    {
+      "id": "US-005",
+      "title": "Aggregate results and format output",
+      "description": "As a user, I want health check results in a readable format so that I can quickly spot unhealthy services.",
+      "acceptanceCriteria": [
+        "internal/report/report.go exports FormatResults(results []ProbeResult, format string) (string, error)",
+        "Summary struct includes: TotalPods, HealthyCount, UnhealthyCount, PerNamespace map[string]NamespaceSummary",
+        "--output=json produces valid JSON to stdout (parseable by jq)",
+        "--output=table produces aligned table with columns: NAMESPACE | POD | ENDPOINT | STATUS | LATENCY",
+        "Table output lists unhealthy pods first, then healthy pods",
+        "Exit code 1 when any pod is unhealthy, exit code 0 when all healthy",
+        "Unit tests cover both JSON and table output with sample data including healthy and unhealthy pods",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "medium",
+      "priority": 5,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-004"]
+    },
+    {
+      "id": "US-006",
+      "title": "Wire everything in the check command",
+      "description": "As a user, I want to run a single command that discovers, probes, and reports so that the tool is usable end-to-end.",
+      "acceptanceCriteria": [
+        "cmd/check.go wires together: client init → discovery → probing → formatting → output",
+        "All flags registered: --kubeconfig, --context, --namespace, --all-namespaces, --concurrency, --timeout, --output",
+        "Running ./kube-healthcheck check --help shows all flags with descriptions",
+        "Errors at any stage produce descriptive message to stderr and exit code 1",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "medium",
+      "priority": 6,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-005"]
+    },
+    {
+      "id": "US-007",
+      "title": "Dockerfile and README",
+      "description": "As a DevOps engineer, I want a container image and usage docs so that the tool can run in CI pipelines.",
+      "acceptanceCriteria": [
+        "Dockerfile uses multi-stage build: golang:1.23-alpine builder, alpine:3.20 runtime",
+        "Final image is under 20MB (check with docker images | grep kube-healthcheck)",
+        "docker build -t kube-healthcheck . exits 0",
+        "docker run --rm kube-healthcheck --help exits 0 and prints usage",
+        "README.md documents: installation (go install + docker), all flags, output formats, exit codes",
+        "README.md includes example GitHub Actions CI snippet",
+        "README.md includes example usage commands for common scenarios",
+        "go build ./... exits 0",
+        "go test ./... -v -count=1 passes with no failures",
+        "golangci-lint run exits 0"
+      ],
+      "effort": "medium",
+      "priority": 7,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-006"]
+    }
+  ]
+}
