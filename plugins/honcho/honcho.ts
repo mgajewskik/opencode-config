@@ -1161,14 +1161,15 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
         description:
           "Semantically search the Honcho memory system for raw context relevant to a query. " +
           "Best for exact recall or supporting evidence from past conversations in the current " +
-          "project's Honcho session; prefer honcho_chat for synthesized answers about user " +
-          "preferences, patterns, or working style.",
+          "project's Honcho session; prefer honcho_chat when you want Honcho to synthesize " +
+          "what that memory implies for the current task, project context, or user patterns.",
         args: {
           query: tool.schema
             .string()
             .describe(
               "What you want to find in past conversation history. Use honcho_search for raw " +
-              "recall/evidence; prefer honcho_chat for summarized preference or working-style questions."
+              "recall/evidence; prefer honcho_chat when you want a synthesized answer about " +
+              "the task, project context, or user patterns."
             ),
         },
         async execute({ query }) {
@@ -1188,17 +1189,18 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
 
       honcho_chat: tool({
         description:
-          "Query Honcho's reasoning about the current user based on past conversation history. " +
-          "Returns Honcho's derived understanding of the user's preferences, patterns, and goals. " +
-          "Prefer this over honcho_search when you want a synthesized answer about the user's " +
-          "preferences, patterns, goals, or working style. Sends a single question to the user " +
-          "peer's dialectic reasoning endpoint.",
+          "Ask Honcho a specific natural-language question and get a synthesized answer grounded " +
+          "in relevant memory. Use it for questions about the current task, project context, " +
+          "prior similar work, or the user's preferences and patterns when you want Honcho's " +
+          "reasoning instead of raw snippets. Sends a single question to the user peer's " +
+          "dialectic reasoning endpoint.",
         args: {
           query: tool.schema
             .string()
             .describe(
-              "A question to ask Honcho about the user when you want a synthesized answer, " +
-              "e.g. 'What does this user prefer for code style?'"
+              "A question to ask Honcho when you want a synthesized answer from memory, e.g. " +
+              "'Have we done something similar in this project before?' or 'What does this user " +
+              "prefer for code style?'"
             ),
         },
         async execute({ query }) {

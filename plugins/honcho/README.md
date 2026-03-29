@@ -328,9 +328,9 @@ args: { query: string }
 
 Semantically searches the current project's Honcho session for past conversation content
 relevant to `query`. Best when you want raw recall or supporting evidence from prior
-conversation text. If you want a synthesized answer about user preferences, patterns, goals,
-or working style, prefer `honcho_chat`. Uses the Honcho SDK session search method and joins
-matching message content from the response.
+conversation text. If you want Honcho to synthesize what that memory implies for the current
+task, project/session context, prior similar work, or user patterns, prefer `honcho_chat`.
+Uses the Honcho SDK session search method and joins matching message content from the response.
 
 ### `honcho_chat`
 
@@ -338,10 +338,11 @@ matching message content from the response.
 args: { query: string }
 ```
 
-Queries Honcho's peer chat method with a single natural-language question about the user,
-e.g. `"What does this user prefer for code style?"`. Prefer this over `honcho_search` when
-you want a synthesized answer about the user rather than raw retrieved conversation snippets.
-Returns Honcho's derived response string.
+Queries Honcho's peer chat method with a single natural-language question grounded in relevant
+memory. Use it when you want a synthesized answer—e.g. what has already been tried on a
+similar task, what matters in the current project/session context, or what the user tends to
+prefer—rather than raw retrieved conversation snippets. Returns Honcho's derived response
+string.
 
 ### `honcho_peer_context`
 
