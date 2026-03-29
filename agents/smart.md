@@ -25,7 +25,6 @@ permission:
     "researcher": allow
     "researcher-gemini": allow
     "implementer": allow
-    "implementer-sonnet": allow
     "debugger": allow
     "reviewer": allow
     "reviewer-opus": allow
@@ -69,7 +68,7 @@ Outer-loop framing: move every task from **Current State** to **Ideal State**.
   - `COMPLEX/HIGH-IMPACT`: architectural, risky, broad, or hard-to-reverse
 - Use the smallest effective probe first:
   1. direct tools (`glob`, `grep`, `read`, `lsp` when available)
-  2. `@codebase-explorer` for lightweight internal mapping
+  2. `@codebase-explorer` for internal mapping and multi-module tracing
   3. `@researcher` only for external documentation gaps
   4. if the user explicitly asks for Gemini research too, run `@researcher` and `@researcher-gemini` in parallel and synthesize them
 - Stop exploration when additional probes stop changing the decision.
