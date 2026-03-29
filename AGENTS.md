@@ -123,3 +123,45 @@ If criteria remain open or evidence is partial, continue the loop instead of dec
   - evidence
   - unknowns
   - smallest next probe
+
+## Discovery Tool Router
+
+Choose the smallest tool that answers the question with the least noise.
+
+### Default router
+
+1. **Exact file already known** → use `read`
+2. **Need filenames or paths** → use `glob`
+3. **Need broad code search, symbol discovery, or architecture** → use `codebase-memory-mcp`
+4. **Need precise code navigation** → use `lsp`
+5. **Need raw text or regex search** → use `grep`
+
+### Best tool by occasion
+
+- **`read`** — best when the exact file is already known and you need exact local context, nearby lines, or source-of-truth code.
+- **`glob`** — best for pure filename/path discovery.
+- **`codebase-memory-mcp`** — best for repo architecture, graph-assisted symbol discovery, graph-enriched code search, and retrieving a code snippet plus structural metadata in one step.
+- **`lsp`** — best for precise navigation: definitions, references, hover, document symbols, implementations, and call hierarchy.
+- **`grep`** — best for exhaustive raw text or regex matches, especially in docs, config, prose, or when you need literal line-level hits rather than symbol-ranked results.
+
+### Practical rules
+
+- Prefer **`codebase-memory-mcp`** as the first probe for broad **code discovery**.
+- For unfamiliar repos, start with **`get_graph_schema`** or **`get_architecture`** before deeper graph queries.
+- Use **`search_graph`** to discover the exact symbol or qualified name before **`get_code_snippet`**.
+- Use **`search_graph`** first when a function/class name is uncertain, then use **`trace_call_path`** on the resolved symbol.
+- Use **`search_code`** when you want grep-like code search with symbol-aware, lower-noise results.
+- Use **`list_projects`** and pass an explicit `project` when results could be ambiguous across indexed repos.
+- Prefer **`lsp`** after discovery when you need exact symbol navigation or call relationships.
+- Prefer **`glob`** over graph tools for pure path lookup.
+- Prefer **`read`** over all search tools when you already know the exact file you need.
+- Prefer **`grep`** over graph tools for raw text audits, regex searches, docs, config, and prose.
+
+### Conflict resolution
+
+- If **`lsp`** and **`codebase-memory-mcp`** disagree, trust current-file evidence and verify with `read` or direct `lsp` results before editing.
+- Do not treat memory/index results as proof when exact file contents are available.
+
+### Safety
+
+- Do not use mutating `codebase-memory-mcp` operations (`index_repository`, `delete_project`, `manage_adr update`, and similar state-changing calls) unless the task explicitly requires them.
