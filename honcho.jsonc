@@ -1,0 +1,79 @@
+// Honcho OpenCode plugin configuration
+// Copy this file to ~/.config/opencode/honcho.jsonc and fill in your values.
+//
+// Required fields to activate the plugin:
+//   - enabled: true
+//   - workspace: your Honcho workspace ID
+//
+// API key resolution order:
+//   1. apiKey field in this file (takes precedence)
+//   2. HONCHO_API_KEY environment variable (used when apiKey is absent)
+{
+  // ── Required ──────────────────────────────────────────────────────────────
+
+  // Set to true to activate. Also requires workspace to be set.
+  "enabled": true,
+
+  // Your Honcho workspace ID.
+  "workspace": "opencode",
+
+  // ── API connection (optional) ─────────────────────────────────────────────
+
+  // API key. Omit this field to use the HONCHO_API_KEY environment variable instead.
+  // "apiKey": "hc-...",
+
+  // Honcho API base URL. Default: https://api.honcho.dev
+  // "apiBaseUrl": "https://api.honcho.dev",
+
+  // ── User peer identity (optional) ─────────────────────────────────────────
+
+  // Stable peer ID used for the user in Honcho. Default: opencode-user
+  // Change this if you want a distinct user identity per machine or team member.
+  "peerName": "mgajewskik",
+
+  // ── Assistant peer identity (optional) ────────────────────────────────────
+
+  // Stable peer ID used for the assistant in Honcho. Default: agent
+  // Agent and model differences stay in message metadata (`agent_name`, `model_id`).
+  "assistantName": "agent",
+
+  // ── Context injection (optional) ──────────────────────────────────────────
+
+  "context": {
+    // Max characters of Honcho context injected into the prompt. Default: 4000
+    "maxLength": 60000,
+
+    // Inject Honcho context on the first message of each OpenCode session. Default: true
+    // Set to false to disable automatic context injection (tools still work).
+    "injectOnFirstMessage": true,
+
+    // Include optional peer-chat synthesis for the user and assistant peers.
+    // Default: false
+    // Set to true to inject peer cards + peer-chat syntheses + session summary.
+    "enablePeerChat": true
+  },
+
+  // ── Upload content filter (optional) ──────────────────────────────────────
+
+  "filter": {
+    // Strip only long fenced code blocks from uploaded messages. Inline `...` references stay.
+    // Default: true
+    "stripCodeBlocks": true,
+
+    // Keep fenced code blocks up to this many content lines. Longer blocks are removed.
+    // Default: 10
+    // "maxCodeBlockLines": 10,
+
+    // Drop lines longer than this many characters from uploaded content.
+    // Removes raw JSON dumps, binary data, and similar noise. Default: 500
+    "maxLineLength": 500,
+
+    // Max total characters uploaded per message after filtering. Default: 8000
+    // Content exceeding this is truncated with a [truncated] marker.
+    "maxContentLength": 60000,
+
+    // Skip upload when filtered content is shorter than this. Default: 20
+    // Avoids uploading empty or near-empty messages.
+    "minContentLength": 20
+  }
+}
