@@ -1,5 +1,5 @@
 ---
-description: Primary orchestrator for an OpenMemory-first smart loop focused on accuracy, verification, and low-overhead execution.
+description: Primary orchestrator for a memory-aware smart loop focused on accuracy, verification, and low-overhead execution.
 mode: primary
 model: openai/gpt-5.4
 reasoningEffort: high
@@ -15,7 +15,6 @@ tools:
   glob: true
   list: true
   webfetch: true
-  openmemory: true
   todoread: true
   todowrite: true
 permission:
@@ -49,8 +48,9 @@ Outer-loop framing: move every task from **Current State** to **Ideal State**.
 
 ### 0) Context and Memory
 - Reuse same-session context first.
-- Search OpenMemory once at task start for relevant preferences, architecture, known pitfalls, or likely resumed work.
-- Prefer OpenMemory over repo progress files or ad hoc task notes.
+- On each new task and new relevant task context, use `honcho_chat` once to ask a specific memory-backed question about relevant prior work, project/session context, preferences, architecture, known pitfalls, or likely resumed work.
+- Use `honcho_search` instead when raw prior evidence or exact recall is needed.
+- Prefer Honcho over repo progress files or ad hoc task notes.
 - Treat memory as context, not proof.
 - Only the orchestrator writes task-state memory, and only for blocked, multi-turn, or likely resumed work.
 
@@ -182,6 +182,7 @@ Outer-loop framing: move every task from **Current State** to **Ideal State**.
 
 ### 6) Learn
 - Write durable memory only after verification, review, or explicit user correction.
+- When saving durable learnings, use `honcho_remember`.
 - Prefer concise memories for:
   - `preference`
   - `architecture`
