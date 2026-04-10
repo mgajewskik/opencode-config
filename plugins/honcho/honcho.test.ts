@@ -5,7 +5,10 @@ import {
   describeInitFailure,
   isChildSessionSeedPrompt,
   nextInitFailureNotificationState,
+  resolvePeerChatOptions,
   resolveAssistantPeerName,
+  resolveRememberConclusionAttribution,
+  resolveSessionSearchLimit,
 } from "./honcho.js";
 
 describe("Honcho assistant peer helpers", () => {
@@ -89,6 +92,138 @@ describe("Honcho initialization failure helpers", () => {
     expect(changedFailure).toEqual({
       errorKey: "Error: Workspace not found",
       shouldNotify: true,
+    });
+  });
+});
+
+describe("Honcho peer chat option helpers", () => {
+  it("leaves peer chat unscoped when no optional args are provided", () => {
+    expect(
+      resolvePeerChatOptions({}, { honchoSessionId: "session-1", assistantPeerId: "agent-1" }),
+    ).toBeUndefined();
+  });
+
+  it("fills the current session only when requested by helper boolean", () => {
+    expect(
+      resolvePeerChatOptions(
+        {
+          currentSession: true,
+          reasoningLevel: "medium",
+        },
+        { honchoSessionId: "session-1", assistantPeerId: "agent-1" },
+      ),
+    ).toEqual({
+      session: "session-1",
+      reasoningLevel: "medium",
+    });
+  });
+
+  it("fills the active assistant peer only when requested by helper boolean", () => {
+    expect(
+      resolvePeerChatOptions(
+        {
+          inRelationToAgent: true,
+        },
+        { honchoSessionId: "session-1", assistantPeerId: "agent-1" },
+      ),
+    ).toEqual({
+      target: "agent-1",
+    });
+  });
+
+  it("fills both the current session and active assistant peer when requested", () => {
+    expect(
+      resolvePeerChatOptions(
+        {
+          currentSession: true,
+          inRelationToAgent: true,
+        },
+        { honchoSessionId: "session-1", assistantPeerId: "agent-1" },
+      ),
+    ).toEqual({
+      session: "session-1",
+      target: "agent-1",
+    });
+  });
+});
+
+describe("Honcho session search helpers", () => {
+  it("uses the default search limit when none is provided", () => {
+    expect(resolveSessionSearchLimit(undefined)).toBe(10);
+  });
+
+  it("accepts an explicit positive integer limit", () => {
+    expect(resolveSessionSearchLimit(25)).toBe(25);
+  });
+
+  it("rejects non-positive or non-integer limits", () => {
+    expect(() => resolveSessionSearchLimit(0)).toThrow(
+      "honcho_search limit must be a positive integer",
+    );
+    expect(() => resolveSessionSearchLimit(-1)).toThrow(
+      "honcho_search limit must be a positive integer",
+    );
+    expect(() => resolveSessionSearchLimit(1.5)).toThrow(
+      "honcho_search limit must be a positive integer",
+    );
+  });
+});
+
+describe("Honcho remember attribution helpers", () => {
+  const identity = {
+    userPeerId: "user-1",
+    assistantPeerId: "agent-1",
+  };
+
+  it("defaults to user observing the user", () => {
+    expect(resolveRememberConclusionAttribution({}, identity)).toEqual({
+      observerId: "user-1",
+      observedId: "user-1",
+    });
+  });
+
+  it("supports the agent reflecting about the user", () => {
+    expect(
+      resolveRememberConclusionAttribution(
+        {
+          observer: "agent",
+          observed: "user",
+        },
+        identity,
+      ),
+    ).toEqual({
+      observerId: "agent-1",
+      observedId: "user-1",
+    });
+  });
+
+  it("supports the user's observation about the agent", () => {
+    expect(
+      resolveRememberConclusionAttribution(
+        {
+          observer: "user",
+          observed: "agent",
+        },
+        identity,
+      ),
+    ).toEqual({
+      observerId: "user-1",
+      observedId: "agent-1",
+    });
+  });
+
+  it("supports the agent reflecting about itself", () => {
+    expect(
+      resolveRememberConclusionAttribution(
+        {
+          observer: "agent",
+          observed: "agent",
+        },
+        identity,
+      ),
+    ).toEqual({
+      observerId: "agent-1",
+      observedId: "agent-1",
     });
   });
 });

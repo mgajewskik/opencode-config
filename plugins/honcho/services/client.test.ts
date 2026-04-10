@@ -245,7 +245,22 @@ describe("HonchoClient", () => {
       "/v3/workspaces/workspace-1/sessions/session-1/search",
     );
     expect(searchCall.init.method).toBe("POST");
-    expect(bodyOf(searchCall)).toEqual({ query: "what matters?", limit: 100 });
+    expect(bodyOf(searchCall)).toEqual({ query: "what matters?", limit: 10 });
+  });
+
+  it("forwards a custom session search limit through the SDK", async () => {
+    responses.push(jsonResponse({ id: "workspace-1" }));
+    responses.push(jsonResponse([apiMessage("message-1", "first memory")]));
+
+    const result = await createClient().sessionSearch("session-1", "what matters?", 5);
+
+    expect(result).toBe("first memory");
+
+    const searchCall = lastCallForPath(
+      "/v3/workspaces/workspace-1/sessions/session-1/search",
+    );
+    expect(searchCall.init.method).toBe("POST");
+    expect(bodyOf(searchCall)).toEqual({ query: "what matters?", limit: 5 });
   });
 
   it("posts peer chat queries using the SDK dialectic payload", async () => {
@@ -262,6 +277,29 @@ describe("HonchoClient", () => {
     expect(bodyOf(chatCall)).toEqual({
       query: "What should I remember?",
       stream: false,
+    });
+  });
+
+  it("forwards optional peer chat SDK options to the dialectic payload", async () => {
+    responses.push(jsonResponse({ id: "workspace-1" }));
+    responses.push(jsonResponse({ content: "peer answer" }));
+
+    const reply = await createClient().peerChat("peer-1", "What changed?", {
+      session: "session-1",
+      reasoningLevel: "high",
+      target: "assistant-peer",
+    });
+
+    expect(reply).toBe("peer answer");
+
+    const chatCall = lastCallForPath("/v3/workspaces/workspace-1/peers/peer-1/chat");
+    expect(chatCall.init.method).toBe("POST");
+    expect(bodyOf(chatCall)).toEqual({
+      query: "What changed?",
+      stream: false,
+      session_id: "session-1",
+      reasoning_level: "high",
+      target: "assistant-peer",
     });
   });
 
@@ -329,7 +367,7 @@ describe("HonchoClient", () => {
     expect(callsForPath("/v3/workspaces/workspace-1/peers/agent/chat")).toHaveLength(0);
   });
 
-  it("uses the exact Claude-style peer chat queries when synthesis is enabled", async () => {
+  it("keeps user synthesis global and scopes assistant synthesis to the current session", async () => {
     responses.push(jsonResponse({ id: "workspace-1" }));
     responses.push(jsonResponse({ peer_card: [] }));
     responses.push(jsonResponse({ content: "User synthesis" }));
@@ -364,6 +402,7 @@ describe("HonchoClient", () => {
     expect(bodyOf(assistantChatCall)).toEqual({
       query: "What has agent been working on recently? Summarize recent activities relevant to the current work.",
       stream: false,
+      session_id: "session-1",
     });
   });
 

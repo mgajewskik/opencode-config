@@ -323,14 +323,16 @@ plugin is not configured.
 ### `honcho_search`
 
 ```
-args: { query: string }
+args: { query: string, limit?: number }
 ```
 
 Semantically searches the current project's Honcho session for past conversation content
 relevant to `query`. Best when you want raw recall or supporting evidence from prior
 conversation text. If you want Honcho to synthesize what that memory implies for the current
 task, project/session context, prior similar work, or user patterns, prefer `honcho_chat`.
-Uses the Honcho SDK session search method and joins matching message content from the response.
+Set `limit` to control how many matching Honcho messages are retrieved; it must be a positive
+integer and defaults to `10`. Uses the Honcho SDK session search method and joins matching
+message content from the response.
 
 ### `honcho_chat`
 
@@ -393,12 +395,31 @@ Returns `{ uploadedCount, messageIds[] }`.
 ### `honcho_remember`
 
 ```
-args: { content: string }
+args: {
+  content: string,
+  observer?: "user" | "agent",
+  observed?: "user" | "agent",
+}
 ```
 
 Stores a plain-text conclusion or insight in Honcho (`POST /conclusions`) anchored to the
-current project session and user peer. The content is run through the same filter as uploaded
-messages — code blocks and log-like content are rejected.
+current project session, with explicit observer/observed attribution. The session is injected
+automatically.
+
+- `observer` = who made the observation. Defaults to `"user"`.
+- `observed` = who the conclusion is about. Defaults to `"user"`.
+
+Recommended patterns:
+
+- direct user fact: `observer="user"`, `observed="user"`
+  - example: `remember that I like flowers`
+- user's observation about the agent: `observer="user"`, `observed="agent"`
+  - example: `remember that as agent, you need to ask before installing packages`
+- agent reflection about the user/project: `observer="agent"`, `observed="user"`
+- agent self-reflection: `observer="agent"`, `observed="agent"`
+
+The content is run through the same filter as uploaded messages — code blocks and log-like
+content are rejected.
 
 ### `honcho_status`
 

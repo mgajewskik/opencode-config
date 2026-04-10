@@ -19,6 +19,7 @@ import type {
 
 const TIMEOUT_MS = 15_000;
 const LIST_PAGE_SIZE = 100;
+export const DEFAULT_SESSION_SEARCH_LIMIT = 10;
 
 function normalizeBaseURL(baseUrl: string): string {
   return baseUrl.replace(/\/(?:v2|v3)\/?$/, "").replace(/\/$/, "");
@@ -69,6 +70,14 @@ function buildUserPeerSynthesisPrompt(userPeerName: string): string {
 
 function buildAssistantPeerSynthesisPrompt(assistantPeerName: string): string {
   return `What has ${assistantPeerName} been working on recently? Summarize recent activities relevant to the current work.`;
+}
+
+export type HonchoPeerChatReasoningLevel = "minimal" | "low" | "medium" | "high" | "max";
+
+export interface HonchoPeerChatOptions {
+  session?: string;
+  reasoningLevel?: HonchoPeerChatReasoningLevel;
+  target?: string;
 }
 
 function toHonchoSession(session: {
@@ -362,28 +371,29 @@ export class HonchoClient {
 
     const [userPeerCard, userPeerSynthesis, assistantPeerCard, assistantPeerSynthesis, summaries] = await Promise.all([
       safe("userPeerCard", async () => normalizePeerCard(await this.getPeerCard(params.userPeerId))),
-      params.enablePeerChat
+       params.enablePeerChat
         ? safe(
           "userPeerSynthesis",
           async () => await this.peerChat(
-            params.userPeerId,
-            buildUserPeerSynthesisPrompt(params.userPeerName)
-          )
+              params.userPeerId,
+             buildUserPeerSynthesisPrompt(params.userPeerName)
+            )
         )
         : Promise.resolve(null),
       safe(
         "assistantPeerCard",
         async () => normalizePeerCard(await this.getPeerCard(params.assistantPeerId))
       ),
-      params.enablePeerChat
-        ? safe(
-          "assistantPeerSynthesis",
-          async () => await this.peerChat(
-            params.assistantPeerId,
-            buildAssistantPeerSynthesisPrompt(params.assistantPeerName)
-          )
-        )
-        : Promise.resolve(null),
+       params.enablePeerChat
+         ? safe(
+           "assistantPeerSynthesis",
+           async () => await this.peerChat(
+             params.assistantPeerId,
+             buildAssistantPeerSynthesisPrompt(params.assistantPeerName),
+             { session: params.sessionId }
+           )
+         )
+         : Promise.resolve(null),
       safe("sessionSummary", async () => await this.getSessionSummaries(params.sessionId)),
     ]);
 
@@ -409,11 +419,15 @@ export class HonchoClient {
     return hasContent ? context : null;
   }
 
-  async sessionSearch(sessionId: string, query: string): Promise<string | null> {
-    log("[honcho/client] sessionSearch", { sessionId, query: query.slice(0, 50) });
+  async sessionSearch(
+    sessionId: string,
+    query: string,
+    limit = DEFAULT_SESSION_SEARCH_LIMIT
+  ): Promise<string | null> {
+    log("[honcho/client] sessionSearch", { sessionId, query: query.slice(0, 50), limit });
     try {
       const session = await this.client.session(sessionId);
-      const messages = await session.search(query, { limit: 100 });
+      const messages = await session.search(query, { limit });
       const content = messages
         .map((message) => message.content.trim())
         .filter(Boolean)
@@ -425,11 +439,15 @@ export class HonchoClient {
     }
   }
 
-  async peerChat(peerId: string, query: string): Promise<string | null> {
+  async peerChat(
+    peerId: string,
+    query: string,
+    options?: HonchoPeerChatOptions
+  ): Promise<string | null> {
     log("[honcho/client] peerChat", { peerId, queryLength: query.length });
     try {
       const peer = await this.client.peer(peerId);
-      return await peer.chat(query);
+      return await peer.chat(query, options);
     } catch (err) {
       log("[honcho/client] peerChat: error", { error: String(err) });
       return null;

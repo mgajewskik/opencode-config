@@ -6,7 +6,12 @@ import { basename, extname, isAbsolute, relative, resolve } from "node:path";
 
 import { CONFIG, isConfigured } from "./config.js";
 import { log } from "./services/logger.js";
-import { getHonchoClient } from "./services/client.js";
+import {
+  DEFAULT_SESSION_SEARCH_LIMIT,
+  getHonchoClient,
+  type HonchoPeerChatOptions,
+  type HonchoPeerChatReasoningLevel,
+} from "./services/client.js";
 import { filterContent } from "./services/filter.js";
 import { resolveProjectIdentity, deleteLocalStateFile } from "./services/project.js";
 import { HonchoSessionState } from "./services/state.js";
@@ -126,6 +131,63 @@ export function nextInitFailureNotificationState(
   return {
     errorKey,
     shouldNotify: previousErrorKey !== errorKey,
+  };
+}
+
+export function resolvePeerChatOptions(
+  args: {
+    currentSession?: boolean;
+    inRelationToAgent?: boolean;
+    reasoningLevel?: HonchoPeerChatReasoningLevel;
+  },
+  identity: Pick<HonchoRuntimeIdentity, "honchoSessionId" | "assistantPeerId">
+): HonchoPeerChatOptions | undefined {
+  const options: HonchoPeerChatOptions = {};
+
+  if (args.currentSession) {
+    options.session = identity.honchoSessionId;
+  }
+  if (args.reasoningLevel !== undefined) {
+    options.reasoningLevel = args.reasoningLevel;
+  }
+  if (args.inRelationToAgent) {
+    options.target = identity.assistantPeerId;
+  }
+
+  return Object.keys(options).length > 0 ? options : undefined;
+}
+
+export function resolveSessionSearchLimit(limit: number | undefined): number {
+  if (limit === undefined) {
+    return DEFAULT_SESSION_SEARCH_LIMIT;
+  }
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error("honcho_search limit must be a positive integer");
+  }
+
+  return limit;
+}
+
+type HonchoRememberPerspective = "user" | "agent";
+
+function resolveRememberPerspectivePeerId(
+  perspective: HonchoRememberPerspective | undefined,
+  identity: Pick<HonchoRuntimeIdentity, "userPeerId" | "assistantPeerId">
+): string {
+  return perspective === "agent" ? identity.assistantPeerId : identity.userPeerId;
+}
+
+export function resolveRememberConclusionAttribution(
+  args: {
+    observer?: HonchoRememberPerspective;
+    observed?: HonchoRememberPerspective;
+  },
+  identity: Pick<HonchoRuntimeIdentity, "userPeerId" | "assistantPeerId">
+): { observerId: string; observedId: string } {
+  return {
+    observerId: resolveRememberPerspectivePeerId(args.observer, identity),
+    observedId: resolveRememberPerspectivePeerId(args.observed, identity),
   };
 }
 
@@ -1171,16 +1233,28 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
               "recall/evidence; prefer honcho_chat when you want a synthesized answer about " +
               "the task, project context, or user patterns."
             ),
+          limit: tool.schema
+            .number()
+            .optional()
+            .describe(
+              "Maximum number of matching Honcho messages to retrieve. Must be a positive integer. Defaults to 10."
+            ),
         },
-        async execute({ query }) {
+        async execute({ query, limit }) {
           if (!isConfigured()) return JSON.stringify({ success: false, error: NOT_CONFIGURED_MSG });
           try {
             const identity = await ensureInitialized();
-            const result = await client!.sessionSearch(identity.honchoSessionId, query);
+            const resolvedLimit = resolveSessionSearchLimit(limit);
+            const result = await client!.sessionSearch(identity.honchoSessionId, query, resolvedLimit);
             if (!result) {
               return JSON.stringify({ success: false, error: "No results found or search unavailable" });
             }
-            return JSON.stringify({ success: true, query, content: result });
+            return JSON.stringify({
+              success: true,
+              query,
+              limit: resolvedLimit,
+              content: result,
+            });
           } catch (err) {
             return JSON.stringify({ success: false, error: String(err) });
           }
@@ -1192,7 +1266,8 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
           "Ask Honcho a specific natural-language question and get a synthesized answer grounded " +
           "in relevant memory. Use it for questions about the current task, project context, " +
           "prior similar work, or the user's preferences and patterns when you want Honcho's " +
-          "reasoning instead of raw snippets. Sends a single question to the user peer's " +
+          "reasoning instead of raw snippets. Optionally scope to the current session or ask " +
+          "in relation to the active assistant peer. Sends a single question to the user peer's " +
           "dialectic reasoning endpoint.",
         args: {
           query: tool.schema
@@ -1202,12 +1277,28 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
               "'Have we done something similar in this project before?' or 'What does this user " +
               "prefer for code style?'"
             ),
+          currentSession: tool.schema
+            .boolean()
+            .optional()
+            .describe("If true, scope the chat request to the current Honcho session."),
+          reasoningLevel: tool.schema
+            .enum(["minimal", "low", "medium", "high", "max"])
+            .optional()
+            .describe("Optional Honcho reasoning level for the peer chat request."),
+          inRelationToAgent: tool.schema
+            .boolean()
+            .optional()
+            .describe("If true, ask in relation to the active shared assistant peer."),
         },
-        async execute({ query }) {
+        async execute({ query, currentSession, reasoningLevel, inRelationToAgent }) {
           if (!isConfigured()) return JSON.stringify({ success: false, error: NOT_CONFIGURED_MSG });
           try {
             const identity = await ensureInitialized();
-            const result = await client!.peerChat(identity.userPeerId, query);
+            const result = await client!.peerChat(
+              identity.userPeerId,
+              query,
+              resolvePeerChatOptions({ currentSession, reasoningLevel, inRelationToAgent }, identity)
+            );
             if (!result) {
               return JSON.stringify({ success: false, error: "Peer chat returned no response" });
             }
@@ -1354,14 +1445,30 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
       honcho_remember: tool({
         description:
           "Explicitly store a semantic conclusion or important insight in Honcho for future " +
-          "reference. Use this to record key facts, decisions, or patterns that should persist " +
-          "across sessions.",
+          "reference. The current project session is injected automatically; you only choose who " +
+          "observed whom. Use user→user for direct user " +
+          "requests like 'remember that I like flowers', user→agent for the user's observation " +
+          "about the agent like 'remember that as agent, you need to ask before installing " +
+          "packages', agent→user for the agent's own durable reflection about the user/project, " +
+          "and agent→agent for the agent's self-reflection.",
         args: {
           content: tool.schema
             .string()
             .describe("The conclusion or insight to store in Honcho"),
+          observer: tool.schema
+            .enum(["user", "agent"])
+            .optional()
+            .describe(
+              "Who made the observation. Defaults to 'user'. Use 'user' for direct user-stated memories, including the user's instructions about the agent; use 'agent' for the agent's own reflections."
+            ),
+          observed: tool.schema
+            .enum(["user", "agent"])
+            .optional()
+            .describe(
+              "Who the observation is about. Defaults to 'user'. Set to 'agent' when the memory is about the agent, e.g. 'remember that as agent, you need to ask before installing packages'."
+            ),
         },
-        async execute({ content }) {
+        async execute({ content, observer, observed }) {
           if (!isConfigured()) return JSON.stringify({ success: false, error: NOT_CONFIGURED_MSG });
           try {
             const identity = await ensureInitialized();
@@ -1372,18 +1479,31 @@ export const HonchoPlugin: Plugin = async (ctx: PluginInput) => {
                 error: `Content filtered out (${filtered.reason}). Provide a plain-text description.`,
               });
             }
-            // observed_id = user peer (subject); observer_id = user peer (observer)
+
+            const attribution = resolveRememberConclusionAttribution(
+              { observer, observed },
+              identity
+            );
+
+            // observed_id = subject of the conclusion; observer_id = peer making the observation
             // session_id anchors the conclusion to the current project session
             const id = await client!.createConclusion(
               filtered.filtered,
-              identity.userPeerId,
-              identity.userPeerId,
+              attribution.observedId,
+              attribution.observerId,
               identity.honchoSessionId
             );
             if (!id) {
               return JSON.stringify({ success: false, error: "Failed to store conclusion in Honcho" });
             }
-            return JSON.stringify({ success: true, id, message: "Conclusion stored in Honcho" });
+            return JSON.stringify({
+              success: true,
+              id,
+              observer_id: attribution.observerId,
+              observed_id: attribution.observedId,
+              session_id: identity.honchoSessionId,
+              message: "Conclusion stored in Honcho",
+            });
           } catch (err) {
             return JSON.stringify({ success: false, error: String(err) });
           }

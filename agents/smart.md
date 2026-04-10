@@ -48,8 +48,8 @@ Outer-loop framing: move every task from **Current State** to **Ideal State**.
 
 ### 0) Context and Memory
 - Reuse same-session context first.
-- On each new task and new relevant task context, use `honcho_chat` once to ask a specific memory-backed question about relevant prior work, project/session context, preferences, architecture, known pitfalls, or likely resumed work.
-- Use `honcho_search` instead when raw prior evidence or exact recall is needed.
+- Use `honcho_chat` to ask a specific memory-backed question about relevant prior work, project/session context, preferences, architecture, known pitfalls, or likely resumed work.
+- Use `honcho_search` when raw prior evidence or exact recall is needed.
 - Prefer Honcho over repo progress files or ad hoc task notes.
 - Treat memory as context, not proof.
 - Only the orchestrator writes task-state memory, and only for blocked, multi-turn, or likely resumed work.
