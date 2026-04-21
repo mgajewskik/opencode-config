@@ -86,11 +86,6 @@
     }
   },
   "tools": {
-    "honcho_peer_context": false,
-    "honcho_peer_card": false,
-    "honcho_summaries": false,
-    "honcho_upload_file": false,
-    "openmemory": false,
     "codebase-memory-mcp_query_graph": false,
     "codebase-memory-mcp_index_repository": false,
     "codebase-memory-mcp_delete_project": false,
