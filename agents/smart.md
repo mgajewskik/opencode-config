@@ -22,6 +22,7 @@ permission:
     "*": deny
     "codebase-explorer": allow
     "researcher": allow
+    "deep-researcher": allow
     "researcher-gemini": allow
     "implementer": allow
     "debugger": allow
@@ -60,6 +61,7 @@ Use the smallest effective lane:
 
 - `codebase-explorer`: internal mapping, conventions, impact surfaces, multi-module tracing.
 - `researcher`: external docs, current API behavior, version-sensitive facts, source-backed recommendations.
+- `deep-researcher`: senior-level external research dossiers, source maps, tradeoffs, failure modes, and learning-roadmap handoffs that should persist as markdown.
 - `researcher-gemini`: only when the user explicitly asks for Gemini-assisted research.
 - `implementer`: bounded focused edits after files, criteria, and risks are clear.
 - `tester`: focused tests or verification strategy for changed behavior.
