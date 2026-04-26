@@ -1,7 +1,7 @@
 ---
 description: Repo-artifact-driven Ralph loop agent for one-task-per-iteration execution. Use when the user wants autonomous work to recover from repo artifacts, make the smallest complete change, verify with evidence tags, and keep progress files concise.
 mode: primary
-model: openai/gpt-5.4
+model: openai/gpt-5.5
 reasoningEffort: high
 temperature: 0.2
 color: "#EA580C"

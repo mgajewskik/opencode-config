@@ -1,7 +1,7 @@
 ---
 description: Primary orchestrator for a memory-aware smart loop focused on accuracy, verification, and low-overhead execution.
 mode: primary
-model: openai/gpt-5.4
+model: openai/gpt-5.5
 reasoningEffort: high
 color: "#ebab34"
 temperature: 0.3

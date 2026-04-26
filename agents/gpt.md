@@ -1,7 +1,7 @@
 ---
 description: Intelligent GPT advisory agent for deep analysis, second opinions, and specialized knowledge. Use when primary agent needs high-quality reasoning on technical, coding, or soft skill topics. Spawns via Task tool, returns structured analysis for further processing. Do NOT use for code modifications or file operations.
 mode: subagent
-model: openai/gpt-5.4
+model: openai/gpt-5.5
 reasoningEffort: high
 temperature: 0.3
 tools:
