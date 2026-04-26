@@ -24,6 +24,9 @@ SKILLS=(
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/requirements-clarity"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/skill-judge"
     "https://github.com/softaworks/agent-toolkit/tree/main/skills/writing-clearly-and-concisely"
+
+    # Third-party skills
+    "https://github.com/antonbabenko/terraform-skill/tree/main/skills/terraform-skill"
 )
 
 mkdir -p "$SKILL_DIR"

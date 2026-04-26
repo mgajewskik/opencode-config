@@ -35,10 +35,4 @@ Most external skills vendored into `skills/` can be refreshed with:
 ./scripts/update-skills.sh
 ```
 
-That script re-syncs the external skill directories listed inside it.
-
-`skills/terraform-skill` is tracked as a git submodule, so it is updated separately, for example with:
-
-```bash
-git submodule update --remote --init skills/terraform-skill
-```
+That script re-syncs the external skill directories listed inside it, including third-party skills that need a nested source path materialized into `skills/<name>/`.
