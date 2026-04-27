@@ -32,6 +32,13 @@ Practical mature patterns:
 - SOPS with KMS-backed decryption for git-managed encrypted files
 - runtime lookup from HashiCorp Vault or cloud secret managers
 - controller credential stores when using AWX/AAP
+- CyberArk/Conjur or equivalent external secret systems in regulated AAP estates
+
+Vault caveats:
+
+- Vault protects encrypted-at-rest files, not decrypted runtime values.
+- Git can syntactically merge vaulted ciphertext into corrupted encrypted files; use single-writer discipline or a merge strategy.
+- Shared vault passwords are operationally weak at scale.
 
 ## `no_log`
 
@@ -42,6 +49,8 @@ Remember:
 - explicit debug output can still leak values
 - surrounding logic may still reveal sensitive data indirectly
 - CI logs and task failures can still expose context if the workflow is careless
+- `-vvvv` may expose decrypted Vault content in tracebacks or plugin debug paths
+- shell interpolation and process arguments can leak decrypted values outside Ansible's masking model
 
 Pair `no_log` with `diff: false` on secret-bearing templates/files and review artifact retention in CI, Runner, AWX, and AAP.
 
@@ -72,6 +81,8 @@ Also require:
 - version review before upgrades
 - signature verification or content verification where available
 - reproducible execution environments
+- content signing or verification through Private Automation Hub where available
+- immutable EE digest references in production
 
 ## Secret Handling Checklist
 
@@ -83,6 +94,7 @@ Also require:
 - Are runtime credentials injected at the narrowest possible scope?
 - Are Runner/AWX/controller artifacts retained with sensitive event data?
 - Has a canary secret been checked absent from logs, diffs, and artifacts?
+- Could a decrypted value appear in process args, shell history, target temp files, callback events, or AWX activity stream?
 
 ## Recommendation Defaults
 
@@ -99,3 +111,5 @@ Also require:
 - treating unpinned collections and mutable EEs as harmless
 - assuming Vault prevents runtime leaks
 - using `world_readable_temp` as a routine become workaround
+- putting credentials into process arguments or shell commands
+- assuming controller event retention is harmless because stdout looked redacted

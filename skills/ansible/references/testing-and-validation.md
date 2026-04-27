@@ -28,6 +28,8 @@ For non-trivial changes, prefer all of these:
 - `--list-hosts` and `--list-tasks` for destructive or broad plays
 - `--check --diff` against a safe target when semantics allow it
 
+For production-impacting runs, `--list-hosts` must use the exact `-i`, `--limit`, and extra-vars shape intended for the real run. This catches implicit-localhost fallback and wrong inventory selection.
+
 ## Inventory and Config Sanity
 
 Before blaming a playbook, verify:
@@ -73,6 +75,8 @@ At minimum:
 2. run again on the same target set
 3. inspect unexpected `changed` results
 
+Second-run-no-change is the canonical role confidence check. If a task must always report changed, document why and isolate the handler implications.
+
 ## Molecule
 
 Use Molecule when:
@@ -87,6 +91,8 @@ Pair it with:
 - `ansible-lint`
 - `yamllint`
 - Testinfra or goss when state assertions matter
+
+For role work, prefer scenarios that cover converge, idempotency, and verify. `ansible-lint --profile production` is a strong default for shared code.
 
 ## CI Gate Recommendation
 
@@ -123,6 +129,8 @@ Check for:
 | rollout logic change | canary + `serial` plan + rollback path |
 | controller workflow change | variable-passing check + workflow dry run + namespacing review |
 | secret-handling change | redaction check + diff suppression + artifact/canary-secret scan |
+| EE or AAP runtime change | run with the intended EE via navigator/runner + capture `ansible --version` and collection list |
+| air-gap content change | verify PAH import/signature + EE pull from disconnected registry + no external network dependency |
 
 ## Anti-Patterns
 
@@ -132,6 +140,8 @@ Check for:
 - validating against prod first because staging is inconvenient
 - broad inventory rollouts with no canary or `serial` control
 - approving dangerous plays without a host-set preview
+- accepting a green check-mode run when required side-effect tasks were skipped
+- forgetting that diff output can expose rendered secrets
 
 ## Good Recommendation Shape
 

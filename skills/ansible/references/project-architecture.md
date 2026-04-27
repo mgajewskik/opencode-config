@@ -38,6 +38,7 @@ ansible/
 4. Keep authored roles separate from third-party dependencies.
 5. Pin roles and collections in `requirements.yml`.
 6. Treat execution environments as versioned runtime artifacts.
+7. Treat inventory as a database: single-writer per source, CRUD-able, versioned, and validated before production runs.
 
 ## `ansible.cfg` Safety
 
@@ -81,7 +82,18 @@ Use plain repo-local roles when:
 
 Do not treat Galaxy publication as the primary reason to use collections. Use them because they improve packaging and interface discipline.
 
-Senior posture: start flat enough to understand, extract roles when behavior repeats, and promote to collections when distribution, versioning, plugins, or EE packaging make the boundary real.
+Senior posture: start flat enough to understand, extract roles when behavior repeats, and promote to collections when distribution, versioning, plugins, signed content, or EE packaging make the boundary real. New long-lived shared content should usually be collection-first; standalone roles are acceptable for narrow repo-local work.
+
+## Role Interface Contract
+
+Reusable roles should expose an interface, not just a task folder:
+
+- `defaults/main.yml` documents caller-overridable inputs
+- `meta/argument_specs.yml` validates typed role arguments where practical
+- `meta/main.yml` declares real role dependencies
+- `handlers/` contains only handler work triggered by real changes
+- `molecule/` or equivalent scenario tests cover converge and idempotency
+- environment-specific values stay in inventory, not role internals
 
 ## Repo Boundaries
 
@@ -128,6 +140,7 @@ Inventory sharp edges to call out in reviews:
 - inventory directories load alphabetically, so prefix files when order matters
 - same-level groups merge alphabetically unless `ansible_group_priority` is set in inventory
 - INI inventory parses inline host variables differently from `:vars`; prefer YAML when types matter
+- missing inventory paths may fall back to implicit localhost; preview prod hostsets with `--list-hosts` before risky runs
 
 ## Dependency Placement
 
@@ -159,6 +172,8 @@ Why:
 - faster image builds and pulls
 - clearer ownership
 
+Air-gapped or regulated default: build layered EEs with an org base image that contains internal CA trust and package mirror configuration, then team/application EEs `FROM` that base. Pin production job templates by digest, not mutable tags.
+
 ## Architectural Anti-Patterns
 
 - uncommitted `ansible.cfg`
@@ -167,6 +182,8 @@ Why:
 - unpinned `requirements.yml`
 - environment branches used to mask poor inventory separation
 - one giant execution environment for every team and use case
+- hand-built EEs with no `execution-environment.yml` source
+- mutable `latest` tags in production job templates
 - mixing staging and production inventories without an explicit cross-environment reason
 
 ## Good Default Recommendation Shape

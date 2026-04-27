@@ -29,6 +29,9 @@ Version facts are time-sensitive. Verify current maintained versions from local 
 - execution-environment dependency mismatches
 - role variable exposure and include/import behavior around major boundaries
 - module `check_mode` / `diff_mode` support changing across collections
+- third-party strategy plugins on ansible-core 2.19+ due to deprecation of non-`ansible.builtin` strategies
+- AAP 2.4/2.5/2.6 install-topology changes, especially RPM deprecation/removal path
+- EDA and controller data migrations where backing services or DB compatibility changes
 
 ## Porting Review Checklist
 
@@ -37,6 +40,7 @@ Version facts are time-sensitive. Verify current maintained versions from local 
 - Does the EE pin the new controller-side dependencies explicitly?
 - Do check-mode and live runs still agree on the critical paths?
 - Is there a rollback plan to the prior runtime?
+- Are AAP platform components, PostgreSQL major versions, PAH content, and EE images included in backup/restore planning?
 
 ## Safe Recommendation Defaults
 
@@ -52,3 +56,5 @@ Version facts are time-sensitive. Verify current maintained versions from local 
 - upgrading core without reviewing collection compatibility
 - assuming lint alone proves upgrade readiness
 - testing only playbooks while ignoring custom plugins or EEs
+- upgrading AAP while assuming controller DB backup also preserves hub content and EE image blobs
+- treating Rocky/Alma AAP installs as support-equivalent to RHEL without checking the contract

@@ -23,12 +23,14 @@ When diagnosing a variable problem, ask:
 
 ## High-Value Precedence Reminders
 
-You do not need all precedence levels memorized in every answer. Usually the important ones are:
+You do not need all 22 precedence levels in every answer. Usually the important ones are:
 
 1. extra vars (`-e`) win
 2. task/block/role vars are high-precedence
 3. `host_vars` beat broader `group_vars`
 4. role defaults are lowest
+5. registered vars and transient `set_fact` are high during the current run
+6. cached `set_fact` values reappear later as lower-precedence cached facts
 
 If the user is debugging a real collision, do not guess. Reason from the actual sources and inventory layout.
 
@@ -40,6 +42,7 @@ If the user is debugging a real collision, do not guess. Reason from the actual 
 - same-level groups merge alphabetically unless `ansible_group_priority` is set in inventory
 - playbook-relative `group_vars` can override inventory-relative `group_vars`
 - INI inline host vars parse as Python literals, but `:vars` entries parse as strings; YAML inventory avoids this inconsistency
+- missing or mistyped inventory paths can fall back to implicit localhost; always preview hostsets before prod-impacting runs
 
 For wrong-host or wrong-variable incidents, first prove the resolved view with `ansible-inventory --graph` and `ansible-inventory --host <host>`.
 
@@ -77,19 +80,23 @@ Use it for:
 Foot-gun:
 
 - facts set inside a delegated task attach to the original host unless `delegate_facts: true` is used
+- play-level `become: true` still applies to `delegate_to: localhost`; scope privilege escalation deliberately
+- `run_once` under `serial` can run once per batch, not once globally
 
 ## Recommended Cross-Host Patterns
 
 ### One-time control-plane action
+
+Under `serial`, prefer an explicit first-host guard when the operation must be globally once-only.
 
 ```yaml
 - name: register all backends from one place
   ansible.builtin.uri:
     url: https://lb.internal/api/backends/{{ item }}
     method: POST
-  run_once: true
   delegate_to: localhost
   loop: "{{ ansible_play_hosts_all }}"
+  when: inventory_hostname == ansible_play_hosts_all[0]
 ```
 
 ### Push a fact onto other hosts intentionally
@@ -165,6 +172,8 @@ This is useful for:
 - using hidden global merge behavior instead of explicit `combine`
 - changing inventory topology mid-run without deliberate need
 - passing multiple environment inventories together as routine practice
+- storing observed OS state in inventory vars when facts should be the source of truth
+- assuming `run_once` means once per whole play under rolling `serial`
 
 ## Debug Questions
 

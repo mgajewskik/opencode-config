@@ -16,6 +16,13 @@ ansible --version
 ansible-galaxy collection list
 ```
 
+For controller/EE parity:
+
+```bash
+ansible-navigator run playbooks/site.yml --mode stdout --execution-environment-image <ee>
+ansible-runner run /tmp/private --playbook site.yml --container-image <ee>
+```
+
 ## Fast Review Checklist
 
 - repo-local `ansible.cfg`
@@ -33,6 +40,8 @@ ansible-galaxy collection list
 - verify SSH reuse and pipelining
 - measure before raising `forks`
 - serialize shared control-plane writes
+- use `async` only with explicit `async_status` reconciliation
+- consider AAP mesh/execution nodes when one controller is saturated or topology is segmented
 
 ## Fast Security Checklist
 
@@ -43,14 +52,28 @@ ansible-galaxy collection list
 - check CI/Runner/AWX artifacts for leaked values
 - prefer runtime lookup for frequently rotated secrets
 - pin dependencies and runtimes
+- avoid `-vvvv` around vaulted or credential-bearing tasks in retained logs
+- pin production EEs by digest and verify signed/curated content where available
 
 ## Fast Role Checklist
 
 - defaults document inputs
+- `meta/argument_specs.yml` validates important inputs
 - high-precedence vars used sparingly
 - handlers only on real change
 - includes/imports chosen intentionally
 - role does not depend on hidden side effects
+- Molecule or equivalent verifies converge + idempotency
+
+## Fast AAP / Air-Gap Checklist
+
+- job template uses a pinned EE digest
+- internal CA exists in the base EE
+- controller pulls collections/images from PAH or approved internal sources only
+- PAH content and EE image blobs are backed up separately from controller DB
+- activity stream is forwarded/retained according to audit needs
+- mesh instance groups map to network/security zones
+- disconnected content flow is staging PAH -> export/sign/review -> transport -> production PAH import
 
 ## Module-over-Shell Rule
 
@@ -70,3 +93,4 @@ If any answer is weak, prefer a different design.
 3. What restarts, and what happens if a later task fails?
 4. Where can decrypted secrets appear: logs, diffs, artifacts, target files?
 5. What runtime and collection versions are pinned?
+6. Does the second run converge cleanly, and what changed if not?

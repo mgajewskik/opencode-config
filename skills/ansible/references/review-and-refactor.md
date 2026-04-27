@@ -24,6 +24,7 @@ Inspect in this order:
 5. validation and rollout safety
 6. secret handling and logging exposure
 7. performance or scale traps only after correctness
+8. platform/ecosystem fit when Ansible is being used as Terraform, GitOps, or a runtime secret manager
 
 ## What Good Looks Like
 
@@ -36,6 +37,8 @@ Inspect in this order:
 - canary or batch control for risky changes
 - explicit file modes and template validation where applicable
 - host-set preview for dangerous or broad runs
+- execution environment or other reproducible runtime for controller parity
+- explicit AAP/PAH backup scope if platform operations are in scope
 
 ## Common Blockers
 
@@ -47,6 +50,8 @@ Inspect in this order:
 - no usable validation beyond lint
 - secret-bearing diffs/logs/artifacts are not controlled
 - handlers can be skipped after config changes with no deliberate mitigation
+- production job templates reference mutable EE tags
+- AAP/PAH/AWX workflows have no audit/log retention or backup story
 
 ## Refactor Strategy
 
@@ -92,6 +97,23 @@ Reject or push back when a refactor:
 - “Vault means secrets are safe”
 - “run_once always means once globally”
 - “check mode proves production safety”
+- “AAP is just a UI for ansible-playbook”
+- “Vault is our runtime secret manager”
+- “latest EE tag is fine in prod”
+- “we use Ansible to provision all cloud resources because it can call APIs”
+
+## Senior Warning Signs
+
+- no `roles/` or collection boundary; only top-level playbooks
+- role `tasks/main.yml` is hundreds of lines
+- no `meta/argument_specs.yml` for reusable roles
+- broad `command` / `shell` use with no idempotency hook
+- `all.yml` carries hundreds of unrelated vars and secrets
+- static and dynamic inventory sources overlap without documented merge order
+- `gather_facts: true` everywhere against large inventories
+- `delegate_to: localhost` scattered because controller work has no explicit design
+- EEs hand-built in registry with no source definition
+- PAH content is assumed to be protected by controller DB backup
 
 ## Evidence Guidelines
 

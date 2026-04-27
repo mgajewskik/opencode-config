@@ -1,9 +1,9 @@
 ---
 name: ansible
-description: Senior-level Ansible guidance for production automation. Use when designing or reviewing Ansible project structure, playbooks, roles, custom modules or plugins, inventories, variable flow, execution environments, AWX or AAP workflows, testing, debugging, upgrades, performance tuning, secrets handling, or large-scale rollout patterns.
+description: "Senior-level Ansible guidance for production automation. Use when designing, creating, running, reviewing, or debugging Ansible projects: ansible-core execution, playbooks, roles, collections, custom modules/plugins, inventories, variable flow, EEs, AWX/AAP, PAH, EDA, air-gap workflows, testing, upgrades, performance, secrets, and large-scale rollouts."
 metadata:
   author: local
-  version: "0.2"
+  version: "0.3"
 ---
 
 # Ansible
@@ -16,11 +16,13 @@ This skill is based on a bundled senior-level Ansible source corpus and is inten
 
 Classify the request first, then load only the smallest useful reference.
 
+- Core mechanics, execution lifecycle, AnsiballZ, templating location, strategy barriers, idempotency model -> read [references/core-mechanics.md](references/core-mechanics.md)
 - Project layout, repo boundaries, inventories, `ansible.cfg`, collections, Git strategy -> read [references/project-architecture.md](references/project-architecture.md)
 - Playbooks, tasks, handlers, tags, includes/imports, roles as APIs, `shell`/`command` tradeoffs -> read [references/playbook-and-role-patterns.md](references/playbook-and-role-patterns.md)
 - Custom modules, callbacks, filters, lookups, plugins, collection packaging, extensibility boundaries -> read [references/plugins-and-extensibility.md](references/plugins-and-extensibility.md)
 - Inventory graph, precedence, `hostvars`, `set_fact`, `set_stats`, delegation, cross-play data flow -> read [references/inventory-vars-and-data-flow.md](references/inventory-vars-and-data-flow.md)
-- Execution environments, `ansible-builder`, `ansible-navigator`, AWX/AAP, job slicing, execution nodes, automation mesh -> read [references/runtime-and-platform.md](references/runtime-and-platform.md)
+- Execution environments, `ansible-builder`, `ansible-navigator`, `ansible-runner`, AWX/AAP, job templates, mesh -> read [references/runtime-and-platform.md](references/runtime-and-platform.md)
+- AAP ecosystem, PAH, EDA, disconnected/air-gapped operations, regulated topologies, ecosystem fit/tradeoffs -> read [references/aap-ecosystem-and-airgap.md](references/aap-ecosystem-and-airgap.md)
 - `ansible-core` upgrades, porting risk, compatibility review, rollout strategy -> read [references/upgrades-and-porting.md](references/upgrades-and-porting.md)
 - Syntax checks, linting, check mode, canaries, Molecule, idempotency, CI gates -> read [references/testing-and-validation.md](references/testing-and-validation.md)
 - Undefined vars, interpreter drift, temp dir issues, handler surprises, debugger workflow, race conditions -> read [references/debugging-and-failure-modes.md](references/debugging-and-failure-modes.md)
@@ -38,6 +40,7 @@ Classify the request first, then load only the smallest useful reference.
 - deciding between runtime, packaging, and scaling approaches
 - hardening secret handling and auditability
 - turning ad hoc Ansible into a predictable, testable system
+- explaining Ansible mechanisms deeply enough to choose the right fix instead of cargo-culting patterns
 
 ## Do Not Use This Skill For
 
@@ -60,14 +63,15 @@ Classify the request first, then load only the smallest useful reference.
 
 ## Core Mental Models
 
-1. **Ansible is a controller-driven state engine, not bash with YAML.**
+1. **Ansible is a Python program that ships Python programs over SSH/WinRM/local transports.**
 2. **Inventory is a graph with merge order and precedence, not just a file.**
 3. **Parse time and run time are different universes.** `import_*` and `include_*` are not interchangeable.
 4. **Idempotency is a contract.** If a task cannot prove its change semantics, treat it as risky.
 5. **Roles are interfaces.** Defaults, validation, and side effects should be deliberate.
-6. **Performance tuning starts by removing work, not by blindly raising `forks`.**
-7. **Secrets discipline and runtime reproducibility are architecture concerns, not polish.**
-8. **`changed` is a control signal.** False positives restart services; false negatives skip handlers.
+6. **Execution environments are the reproducibility unit.** Pin the runtime, collections, Python deps, system deps, and CA surface.
+7. **Performance tuning starts by removing work, not by blindly raising `forks`.**
+8. **Secrets discipline and runtime reproducibility are architecture concerns, not polish.**
+9. **`changed` is a control signal.** False positives restart services; false negatives skip handlers.
 
 ## Interview Triggers
 
@@ -94,11 +98,13 @@ Choose one primary mode and at most one secondary mode.
 
 | Mode | Use when | Load |
 |---|---|---|
+| `mechanics` | explaining root mechanics, execution lifecycle, AnsiballZ, strategy behavior, idempotency model | `references/core-mechanics.md` |
 | `design` | new repo, restructuring, layout, dependency boundaries, collection-first architecture | `references/project-architecture.md` |
 | `build` | writing or modifying playbooks, roles, handlers, and task includes | `references/playbook-and-role-patterns.md` |
 | `extend` | writing or reviewing custom modules, callbacks, filters, lookups, or collection-packaged extensibility | `references/plugins-and-extensibility.md` |
 | `data-flow` | debugging vars, precedence, `hostvars`, delegation, workflow artifacts, fact cache behavior | `references/inventory-vars-and-data-flow.md` |
 | `runtime` | execution environments, builder, navigator, AWX/AAP, mesh, job slicing | `references/runtime-and-platform.md` |
+| `ecosystem` | AAP platform components, PAH, EDA, air-gap, regulated operations, alternatives/tradeoffs | `references/aap-ecosystem-and-airgap.md` |
 | `upgrade` | `ansible-core` upgrades, porting-readiness, version pinning, compatibility fallout | `references/upgrades-and-porting.md` |
 | `validate` | syntax, lint, check mode, idempotency, canary, Molecule, CI policy | `references/testing-and-validation.md` |
 | `debug` | failures, transport, interpreter, temp paths, race conditions, handler order, task debugger | `references/debugging-and-failure-modes.md` |
@@ -114,6 +120,7 @@ Common combinations:
 - `data-flow` + `debug`
 - `upgrade` + `validate`
 - `runtime` + `scale`
+- `runtime` + `ecosystem`
 - `secure` + `review`
 
 ## Core Workflow
@@ -162,6 +169,8 @@ Mode-specific additions:
 - Do not leak secrets in examples, logging advice, or debug output.
 - Do not present Galaxy publication or public distribution as the default reason to use collections.
 - Do not treat Vault, lint, or check mode as complete proof of production safety.
+- Do not call Ansible fully declarative without qualifying that idempotency is per-module discipline.
+- Do not recommend Mitogen or third-party strategy plugins for a multi-year production plan without flagging ansible-core 2.19+ strategy-plugin deprecation risk.
 
 ## Success Criteria
 
