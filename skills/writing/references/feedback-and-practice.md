@@ -54,6 +54,15 @@ Return feedback in this order:
 - test whether a reader can paraphrase the point and next action after one read
 - test whether deadlines, owners, and decisions are explicit
 
+7. Evidence and certainty
+- facts vs hypotheses
+- recommendations vs decisions
+- claims with no supporting example
+
+8. Genre control
+- whether the artifact should be a message, PR, ADR, doc, incident update, postmortem, or public post
+- whether documentation is tutorial, how-to, reference, or explanation
+
 ## Drill library
 
 Choose one drill that matches the main issue.
@@ -75,6 +84,31 @@ Choose one drill that matches the main issue.
 
 - Read-aloud drill
   - Read the draft aloud once. Split or simplify every sentence that makes you stumble.
+
+- Evidence-label drill
+  - Highlight facts, hypotheses, recommendations, risks, and decisions in different colors. Rewrite any sentence whose certainty is too strong for its evidence.
+
+- Genre-fit drill
+  - Name the reader's job in one sentence. Then choose the format that best serves that job.
+
+- Paragraph-skim drill
+  - Copy only the first sentence of each paragraph. If those sentences do not form a summary, rewrite the topic sentences.
+
+## Questions that expose shallow writing advice
+
+Use these for coaching when the user wants to improve, not just receive a rewrite:
+
+- Who is the primary reader, and what do they need to do?
+- What is the one-sentence point?
+- What can be safely omitted?
+- Which sentences are facts, hypotheses, decisions, and recommendations?
+- Why is this document this genre?
+- What would a skimmer learn in 10 seconds?
+- Which jargon is necessary, and which is just register?
+- What evidence would change the recommendation?
+- What did the revision make easier for the reader?
+
+Strong answers mention reader task, prior knowledge, action, evidence, scope, and tradeoffs. Weak answers say only `make it shorter`, `sound professional`, or `everyone should understand it`.
 
 ## Feedback-only mode
 

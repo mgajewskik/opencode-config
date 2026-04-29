@@ -1,51 +1,51 @@
 ---
 name: writing
-description: Use when the user asks to draft, rewrite, review, critique, or coach prose for humans to read, including emails, blog posts, LinkedIn posts, status updates, executive summaries, documentation, instructions, and general writing. Preserves meaning and voice while making text clearer, more direct, more scannable, and easier to use, and can teach reusable writing habits.
+description: "Draft, rewrite, critique, copyedit, or coach prose for humans to read: email, chat, LinkedIn, blogs, docs, READMEs, PRs, commits, issues, ADRs, design docs, incident updates, postmortems, status updates, executive summaries, instructions, and general writing. Use when the user asks for writing, editing, feedback, clearer/concise prose, Strunk-style polish, anti-AI-slop cleanup, or reusable writing coaching. Preserve meaning, evidence, constraints, and voice while improving reader-task fit."
 ---
 
 # Writing
 
-Purpose: make text easier to find, understand, and use without flattening the user's meaning, wording, or voice.
+Purpose: reduce reader effort while preserving the user's meaning, evidence, constraints, stance, and recognizable voice.
 
 ## For / Not For
 
 For:
-- Rewriting text to be clearer, more direct, and easier to use.
-- Preserving the user's intent, stance, and recognizable phrasing while removing friction.
-- Drafting from notes for email, blog, LinkedIn, status updates, executive summaries, documentation, instructions, and general prose.
-- Giving feedback that helps the user improve their own writing habits.
-- Coaching through concrete examples, rewrite rationale, and repeatable drills.
+- Drafting from notes, bullets, outlines, rough ideas, or a blank page.
+- Rewriting, tightening, copyediting, restructuring, and anti-AI-pattern cleanup.
+- Reviewing, critiquing, and coaching with excerpt-anchored feedback.
+- Choosing the right format for the reader's task: BLUF, pyramid, narrative, Diátaxis, PR, commit, ADR, incident, or design-doc structure.
+- Teaching reusable habits through concrete before/after examples and drills.
 
 Not for:
-- Inventing facts, citations, numbers, or source claims.
-- Changing the user's argument, audience, or tone without a clear reason.
-- Replacing all of the user's wording just to sound polished.
-- Turning specific writing into generic assistant prose.
-- Gaming readability scores or applying style rules mechanically when they hurt clarity.
-- Acting as legal, medical, or compliance advice beyond writing quality.
+- Inventing facts, citations, numbers, metrics, root causes, or source claims.
+- Turning hypotheses into facts or unsupported claims into confident prose.
+- Replacing the user's voice with generic assistant polish.
+- Applying style rules mechanically when they hurt clarity, precision, or cohesion.
+- Treating legal, medical, compliance, HR, or security-sensitive text as advice beyond writing quality.
 
 ## Archetype
 
-Recommend Simple/Transformational with two-pass diagnostics and an optional coaching layer.
+Simple/Transformational by default, with Complex/Interview behavior for draft-from-scratch or high-variation artifacts.
 
 Why:
 - Most requests start with existing text, rough notes, or a mixed draft.
-- Quality is both subjective and binary: the text must feel better and remain faithful.
-- Output variation is high, so diagnose before rewriting.
+- Quality is both subjective and binary: the text should read better and remain faithful.
+- Output variation is high, so diagnose the reader, task, genre, evidence level, and constraints before rewriting.
 - Repeat use is expected, so keep coaching and reusable patterns built in.
 
 ## Mode Router
 
-Detect the job first. If multiple modes apply, merge the relevant references.
+Detect the reader task first, then load only the smallest useful references. If multiple modes apply, merge references.
 
 - `rewrite`
-  - Trigger: rewrite, edit, tighten, improve, make this clearer, make this concise.
+  - Trigger: rewrite, edit, tighten, improve, make this clearer, make this concise, make this sound better.
   - Load: `references/core-doctrine.md`
   - Load: `references/diagnostic-and-rewrite.md`
   - Load: `references/fact-preservation.md`
-  - Load: `references/format-playbooks.md` when format is explicit or inferable
+  - Load: `references/sentence-and-style-rules.md`
   - Load: `references/anti-patterns.md`
   - Load: `references/rubric-and-checklists.md`
+  - Load: `references/format-playbooks.md` when format is explicit or inferable
 
 - `rewrite+feedback`
   - Trigger: rewrite plus feedback intent such as critique, review, feedback, coaching notes, what should I improve.
@@ -55,27 +55,51 @@ Detect the job first. If multiple modes apply, merge the relevant references.
 - `feedback-only`
   - Trigger: user wants critique or coaching without a full rewrite.
   - Load: `references/core-doctrine.md`
-  - Load: `references/format-playbooks.md` when format is explicit or inferable
+  - Load: `references/diagnostic-and-rewrite.md`
+  - Load: `references/sentence-and-style-rules.md`
   - Load: `references/anti-patterns.md`
   - Load: `references/rubric-and-checklists.md`
   - Load: `references/feedback-and-practice.md`
+  - Load: `references/format-playbooks.md` when format is explicit or inferable
 
 - `draft`
   - Trigger: write from notes, bullets, outline, or rough ideas.
   - Load: `references/core-doctrine.md`
   - Load: `references/format-playbooks.md`
+  - Load: `references/sentence-and-style-rules.md`
   - Load: `references/rubric-and-checklists.md`
   - Load: `references/anti-patterns.md`
+
+- `copyedit-polish`
+  - Trigger: copyedit, grammar, Strunk, concise, tighten sentences, polish line by line.
+  - Load: `references/core-doctrine.md`
+  - Load: `references/sentence-and-style-rules.md`
+  - Load: `references/anti-patterns.md`
+  - Load: `references/fact-preservation.md`
+
+- `format-fit`
+  - Trigger: choose a format, structure this, turn into an email/post/PR/ADR/doc, classify documentation, Diátaxis, BLUF, Pyramid.
+  - Load: `references/core-doctrine.md`
+  - Load: `references/format-playbooks.md`
+  - Load: `references/rubric-and-checklists.md`
 
 - `coach`
   - Trigger: teach me to write better, help me improve my writing, how can I make this clearer.
   - Load: `references/core-doctrine.md`
-  - Load: `references/format-playbooks.md` when the target format is explicit or inferable
   - Load: `references/feedback-and-practice.md`
   - Load: `references/rubric-and-checklists.md`
+  - Load: `references/format-playbooks.md` when the target format is explicit or inferable
+
+- `operational-or-durable`
+  - Trigger: incidents, postmortems, architecture, design docs, ADRs, PRs, commits, runbooks, status updates, executive summaries.
+  - First detect the primary mode.
+  - Load the files for that primary mode.
+  - Also load: `references/format-playbooks.md`
+  - Also load: `references/fact-preservation.md`
+  - Separate facts, hypotheses, decisions, risks, owners, and next actions.
 
 - `high-stakes-or-global`
-  - Trigger: public statement, sensitive message, policy/compliance copy, international or non-native audience.
+  - Trigger: public statement, sensitive message, policy/compliance copy, security-sensitive wording, international or non-native audience.
   - First detect the primary mode: `draft`, `rewrite`, `rewrite+feedback`, `feedback-only`, or `coach`.
   - Load the files for that primary mode.
   - Also load: `references/fact-preservation.md`
@@ -92,9 +116,10 @@ Required unless the user wants general coaching without a sample:
 - `text_or_points`: source text, notes, bullets, or idea fragments
 
 Optional:
-- `format`: general | email | meeting-request | status-update | executive-summary | blog | linkedin | documentation | technical-doc
+- `format`: general | email | chat | meeting-request | status-update | executive-summary | blog | linkedin | documentation | readme | github-issue | pr-description | commit-message | adr | design-doc | incident-update | postmortem
 - `audience`: reader description
 - `constraints`: length, tone, must-keep phrases, CTA, deadline, taboo words
+- `evidence_level`: lightweight | operational | public | high-stakes
 - `feedback_requested`: true when critique/coaching is explicit or strongly implied
 - `must_preserve`: exact phrases, legal wording, quotes, numbers, terminology
 
@@ -105,10 +130,13 @@ Default interpretation:
 
 ## Default Strategy
 
-- If the reader must act, decide, or approve something, use BLUF: put the ask, decision, or takeaway in the first 1-2 sentences.
-- If the piece explains a process, use goal -> prerequisites -> steps -> verification -> next step.
-- If the audience is broad, public, global, or non-native, favor literal wording, short sentences, defined terms, and low-ambiguity phrasing.
-- If wording is not legally fixed and the sentence states an obligation, prefer `must` over `shall`.
+- Reader task before writer knowledge: ask what the reader must understand, decide, or do.
+- Structure before sentence polish: fix the lede, sequence, headings, and evidence before line edits.
+- If the reader must act, decide, approve, review, or triage, use BLUF: put the ask, decision, status, or takeaway in the first 1-2 sentences.
+- If the piece argues for a decision, use pyramid structure: answer -> reasons -> evidence -> tradeoffs.
+- If the piece documents a task or concept, classify it with Diátaxis before drafting: tutorial, how-to, reference, or explanation.
+- If the piece is operational, label observations, hypotheses, confirmed causes, decisions, risks, mitigations, owners, and next update/action.
+- If the audience is broad, public, global, or non-native, favor literal wording, defined terms, low ambiguity, and fewer idioms.
 - Treat readability metrics as warning lights, not finish lines.
 
 ## Output Contract
@@ -135,6 +163,8 @@ Mode-specific return rules:
 Return when relevant:
 - `Major rewrite note`
   - Use when structure changed substantially.
+- `Evidence note`
+  - Use when the draft lacked evidence for a claim, certainty changed, or a fact was preserved but reframed.
 - `Coaching feedback`
   - Use when user asks for feedback or coaching.
 - `Self-edit practice`
@@ -150,13 +180,15 @@ When the user explicitly says `do not rewrite`, respect that and stay in `feedba
 ## Minimal Workflow
 
 1. Diagnose purpose, audience, and the next action the reader should take.
-2. Identify what must stay fixed: facts, meaning, stance, and voice anchors.
-3. Run Pass A diagnostic before making large edits.
+2. Identify genre, channel, stakes, evidence level, and hard constraints.
+3. Identify what must stay fixed: facts, meaning, stance, terminology, quotes, numbers, and voice anchors.
 4. Choose the execution path by mode:
    - `draft`: build a fresh draft with the matching format playbook when available
    - `rewrite`: run Pass B reconstruction, choose the right structure shape, and use the format playbook when the format is explicit or inferable
    - `rewrite+feedback`: run Pass B reconstruction, then explain the changes and the reusable lesson
    - `feedback-only`: skip full reconstruction and give excerpt-anchored critique plus limited model rewrites
+   - `copyedit-polish`: preserve structure unless it fails the lede, paragraph, or evidence checks
+   - `format-fit`: recommend the structure first, then draft or rewrite only if asked
    - `coach`: teach patterns, habits, and drills; use sample rewrites only when useful
 5. Run the checklist, paraphrase test, and internal rubric.
 6. If feedback is active, explain what changed and how the user can do it alone next time.
@@ -167,6 +199,7 @@ When the user explicitly says `do not rewrite`, respect that and stay in `feedba
 - Prefer reordering, trimming, and clarifying before synonym swapping.
 - Keep signature wording when it is clear enough to survive.
 - Default to active voice, but keep passive when the actor is unknown, irrelevant, or less important than the receiver.
+- Do not over-apply concision when Williams-style cohesion or old-to-new flow carries the reader through an argument.
 - Make responsibility explicit: who does what, by when, and why it matters.
 - Spell choices out instead of using ambiguous shortcuts like `and/or`.
 - Define acronyms and technical terms at first use when the audience may not know them.
@@ -180,10 +213,14 @@ When the user explicitly says `do not rewrite`, respect that and stay in `feedba
 
 - Missing audience context
   - Recovery: infer a likely reader and state the assumption briefly.
+- Wrong genre or mode
+  - Recovery: recommend the right format and explain what failure it prevents.
 - Over-editing erases the user's voice
   - Recovery: restore voice anchors and reduce substitution.
 - Concision removes needed meaning
   - Recovery: restore critical context and cut syntax bloat instead.
+- Unsupported certainty
+  - Recovery: downgrade to hypothesis, add evidence needed, or ask for source facts.
 - Feedback becomes generic
   - Recovery: tie each point to a line, phrase, or repeatable pattern.
 - Draft sounds polished but bland
@@ -194,6 +231,7 @@ When the user explicitly says `do not rewrite`, respect that and stay in `feedba
 ## Quality Bar
 
 - Final text passes the pass/fail checklist in `references/rubric-and-checklists.md`.
-- Internal scores are at least 4/5 for clarity, concision, structure, tone fit, voice preservation, and factual fidelity.
+- Internal scores are at least 4/5 for clarity, structure, reader-task fit, tone fit, voice preservation, and factual fidelity.
 - A reasonable reader could paraphrase the main message and next action after one read.
+- Operational, public, or durable writing labels uncertainty and preserves rationale.
 - Feedback is specific enough that the user can apply it in the next draft without guessing.
