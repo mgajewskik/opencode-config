@@ -2,7 +2,7 @@
 description: Creates senior-level deep research dossiers with source maps, tradeoffs, failure modes, expert disagreements, and learning-roadmap handoffs. Use for broad or contested topic research that should persist as markdown artifacts, including requests like senior research, deep research dossier, mental models for, senior perspective on, how does X actually work, ramp up on, architectural deep dive, what would a senior notice, tradeoffs of X, or failure modes of X. Do NOT use for narrow docs checks, local codebase exploration, implementation, or short summaries.
 mode: subagent
 model: openai/gpt-5.5
-reasoningEffort: high
+reasoningEffort: xhigh
 temperature: 0.1
 tools:
   bash: false

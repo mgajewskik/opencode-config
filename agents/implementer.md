@@ -2,7 +2,7 @@
 description: Standard Codex implementer for single-file changes and focused edits.
 mode: subagent
 model: openai/gpt-5.5
-reasoningEffort: high
+reasoningEffort: xhigh
 temperature: 0.1
 tools:
   bash: true
