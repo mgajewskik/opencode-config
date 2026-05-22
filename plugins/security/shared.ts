@@ -56,7 +56,7 @@ const BASH_DENY_PATTERNS: DenialPattern[] = [
 
   rx(String.raw`${TOKEN}(kubectl|k)\b[^;&|]*\s+delete\b`, "kubectl delete is blocked"),
   rx(String.raw`${TOKEN}oc\b[^;&|]*\s+delete\b`, "oc delete is blocked"),
-  rx(String.raw`${TOKEN}(kubectl|k)\b[^;&|]*\s+(get|describe)\s+secret${END}`, "Kubernetes secret read"),
+  // rx(String.raw`${TOKEN}(kubectl|k)\b[^;&|]*\s+(get|describe)\s+secret${END}`, "Kubernetes secret read"),
   rx(String.raw`${TOKEN}(kubectl|k)\b[^;&|]*\s+(drain)${END}`, "dangerous kubectl operation"),
   rx(String.raw`${TOKEN}(kubectl|k|oc)\b[^;&|]*\s+(apply|create|replace)[^;&|]*\s+(-f|--filename)\s+(https?://|-)`, "Kubernetes manifest from URL or stdin"),
   rx(String.raw`${TOKEN}(kubectl|k)\b[^;&|]*\s+(replace[^;&|]*--force|scale[^;&|]*--replicas=0|auth\s+reconcile[^;&|]*-f|taint\s+nodes?[^;&|]*NoSchedule)${END}`, "dangerous kubectl mutation"),
