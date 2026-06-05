@@ -6,20 +6,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")/skills"
 
 SKILLS=(
-	# Anthropic official skills
-	"https://github.com/anthropics/skills/tree/main/skills/skill-creator"
-	"https://github.com/anthropics/claude-code/tree/main/plugins/plugin-dev/skills/agent-development"
-	"https://github.com/anthropics/claude-code/tree/main/plugins/plugin-dev/skills/command-development"
-	"https://github.com/anthropics/claude-code/tree/main/plugins/plugin-dev/skills/mcp-integration"
-	"https://github.com/anthropics/claude-plugins-official/tree/main/plugins/claude-md-management/skills/claude-md-improver"
-
 	# Softaworks skills
-	"https://github.com/softaworks/agent-toolkit/tree/main/skills/humanizer"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/professional-communication"
-	"https://github.com/softaworks/agent-toolkit/tree/main/skills/daily-meeting-update"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/agent-md-refactor"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/crafting-effective-readmes"
-	"https://github.com/softaworks/agent-toolkit/tree/main/skills/difficult-workplace-conversations"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/reducing-entropy"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/requirements-clarity"
 	"https://github.com/softaworks/agent-toolkit/tree/main/skills/skill-judge"

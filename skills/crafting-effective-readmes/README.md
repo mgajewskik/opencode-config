@@ -173,7 +173,7 @@ crafting-effective-readmes/
 
 ## Related Skills
 
-- `writing` - For general prose quality, clear writing, Strunk-style polish, and avoiding AI patterns
+- `writing-clearly-and-concisely` - For general prose quality, clear writing, and avoiding AI patterns
 
 ## Attribution
 
