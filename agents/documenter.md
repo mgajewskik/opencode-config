@@ -1,9 +1,8 @@
 ---
 description: Writes and updates all types of documentation including READMEs, API docs, user guides, inline comments, and changelogs. Use when you need comprehensive documentation written. Do NOT use for simple inline comments or code review feedback.
 mode: subagent
-model: opencode/claude-sonnet-4-6
-thinking:
-  type: adaptive
+model: openai/gpt-5.5
+reasoningEffort: xhigh
 temperature: 0.1
 tools:
   bash: true
