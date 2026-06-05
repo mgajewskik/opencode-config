@@ -27,6 +27,12 @@ This is a working personal config, not a polished starter template.
 
 Some parts are opinionated, experimental, or only make sense in my environment. The main value here is the structure and ideas behind how I use OpenCode.
 
+## License
+
+The root MIT license applies only to original content authored in this repository. See `LICENSE`.
+
+It does not apply to vendored or third-party content, including skills synced into `skills/` by `scripts/update-skills.sh`, which remain governed by their upstream licenses or terms.
+
 ## Updating external skills
 
 Most external skills vendored into `skills/` can be refreshed with:
