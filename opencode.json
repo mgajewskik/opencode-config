@@ -9,7 +9,7 @@
   "provider": {
     "openai": {
       "options": {
-        "timeout": 300000
+        "timeout": 900000
       }
     }
   },
