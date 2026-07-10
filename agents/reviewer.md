@@ -1,7 +1,7 @@
 ---
 description: Adversarial read-only reviewer for correctness, edge cases, security, criteria coverage, scope control, and simplicity. Use for significant changes and final quality gates. Do NOT use for trivial formatting/typo-only edits.
 mode: subagent
-model: openai/gpt-5.5
+model: openai/gpt-5.6-sol
 reasoningEffort: xhigh
 temperature: 0.1
 tools:

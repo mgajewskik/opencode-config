@@ -4,8 +4,8 @@
   "instructions": [
     "AGENTS.md"
   ],
-  "model": "openai/gpt-5.5",
-  "small_model": "openai/gpt-5.3-codex",
+  "model": "openai/gpt-5.6-sol",
+  "small_model": "openai/gpt-5.6-terra",
   "provider": {
     "openai": {
       "options": {

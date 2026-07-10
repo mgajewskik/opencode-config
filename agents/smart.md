@@ -1,7 +1,7 @@
 ---
 description: Primary orchestrator for task framing, subagent delegation, integration, and final evidence-based completion.
 mode: primary
-model: openai/gpt-5.5
+model: openai/gpt-5.6-sol
 reasoningEffort: xhigh
 color: "#ebab34"
 temperature: 0.3

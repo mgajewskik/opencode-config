@@ -1,7 +1,7 @@
 ---
 description: Deep diagnosis and root-cause analysis for hard bugs after straightforward fixes fail. Use for complex failures, flaky tests, and unclear error chains.
 mode: subagent
-model: openai/gpt-5.5
+model: openai/gpt-5.6-sol
 reasoningEffort: xhigh
 temperature: 0.2
 tools:
