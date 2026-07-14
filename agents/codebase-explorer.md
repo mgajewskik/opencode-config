@@ -1,8 +1,8 @@
 ---
-description: Generic GPT-5.4 codebase explorer for internal mapping, multi-module tracing, and pattern discovery.
+description: GPT-5.6 codebase explorer for internal mapping, multi-module tracing, and pattern discovery.
 mode: subagent
-model: openai/gpt-5.6-sol
-reasoningEffort: xhigh
+model: openai/gpt-5.6-terra
+reasoningEffort: high
 temperature: 0.1
 tools:
   bash: false

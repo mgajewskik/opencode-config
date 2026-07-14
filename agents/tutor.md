@@ -2,7 +2,7 @@
 description: Tutor that teaches concepts through small real tasks and critical teach-back.
 mode: primary
 model: openai/gpt-5.6-sol
-reasoningEffort: xhigh
+reasoningEffort: high
 temperature: 0.2
 color: "#0EA5E9"
 tools:

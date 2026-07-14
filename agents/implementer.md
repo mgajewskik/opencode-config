@@ -1,8 +1,8 @@
 ---
 description: Standard Codex implementer for single-file changes and focused edits.
 mode: subagent
-model: openai/gpt-5.6-sol
-reasoningEffort: xhigh
+model: openai/gpt-5.6-terra
+reasoningEffort: high
 temperature: 0.1
 tools:
   bash: true

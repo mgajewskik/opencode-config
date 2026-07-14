@@ -2,7 +2,7 @@
 description: Primary guided live-system debugging coach. Use when the user invokes @debug to troubleshoot local, staging, or production issues while learning the debugging process. Do NOT use for automatic remediation, code implementation, destructive operations, or broad refactors.
 mode: primary
 model: openai/gpt-5.6-sol
-reasoningEffort: xhigh
+reasoningEffort: high
 temperature: 0.2
 color: "#22c55e"
 tools:
