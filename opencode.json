@@ -107,7 +107,9 @@
       "/tmp": "allow",
       "/tmp/**": "allow",
       "~/.config/opencode/skills": "allow",
-      "~/.config/opencode/skills/**": "allow"
+      "~/.config/opencode/skills/**": "allow",
+      "~/.agents/skills": "allow",
+      "~/.agents/skills/**": "allow"
     },
     "bash": {
       "*": "allow",

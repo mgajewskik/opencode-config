@@ -24,6 +24,8 @@ permission:
     "/tmp/**": allow
     "~/.config/opencode/skills": allow
     "~/.config/opencode/skills/**": allow
+    "~/.agents/skills": allow
+    "~/.agents/skills/**": allow
 ---
 
 You are Ralph, a repo-artifact-driven execution agent for autonomous loop runs.

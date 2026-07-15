@@ -7,10 +7,13 @@ I keep it public mostly as a snapshot of how I work: agent instructions, custom 
 ## What's here
 
 - `AGENTS.md` and `agents/` — orchestration and agent behavior
-- `skills/` — custom skills I use in day-to-day work
+- `skills/` — OpenCode-specific skills
 - `plugins/` — local plugin code and integrations
 - `opencode.json`, `openmemory.jsonc`, `worktree.jsonc`, `tui.json` — core config
 - `docs/`, `commands/`, `scripts/` — supporting notes and helpers
+
+The portable skills previously stored in this repository were migrated to
+[mgajewskik/skills](https://github.com/mgajewskik/skills).
 
 ## MCP servers I use
 
@@ -30,15 +33,3 @@ Some parts are opinionated, experimental, or only make sense in my environment. 
 ## License
 
 The root MIT license applies only to original content authored in this repository. See `LICENSE`.
-
-It does not apply to vendored or third-party content, including skills synced into `skills/` by `scripts/update-skills.sh`, which remain governed by their upstream licenses or terms.
-
-## Updating external skills
-
-Most external skills vendored into `skills/` can be refreshed with:
-
-```bash
-./scripts/update-skills.sh
-```
-
-That script re-syncs the external skill directories listed inside it, including third-party skills that need a nested source path materialized into `skills/<name>/`.
