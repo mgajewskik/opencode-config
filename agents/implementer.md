@@ -1,20 +1,11 @@
 ---
 description: Standard Codex implementer for single-file changes and focused edits.
 mode: subagent
-model: openai/gpt-5.6-terra
+model: openai/gpt-5.6-sol
 reasoningEffort: high
 temperature: 0.1
 tools:
-  bash: true
-  read: true
-  edit: true
-  write: true
-  patch: true
-  grep: true
-  glob: true
-  list: true
   webfetch: false
-  todoread: false
   todowrite: false
 permission:
   task:

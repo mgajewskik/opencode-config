@@ -1,20 +1,14 @@
 ---
 description: GPT-5.6 codebase explorer for internal mapping, multi-module tracing, and pattern discovery.
 mode: subagent
-model: openai/gpt-5.6-terra
+model: openai/gpt-5.6-sol
 reasoningEffort: high
 temperature: 0.1
 tools:
   bash: false
-  read: true
   edit: false
-  write: false
   patch: false
-  grep: true
-  glob: true
-  list: true
   webfetch: false
-  todoread: false
   todowrite: false
 permission:
   task:

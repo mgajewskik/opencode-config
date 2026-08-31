@@ -5,18 +5,6 @@ model: openai/gpt-5.6-sol
 reasoningEffort: high
 temperature: 0.2
 color: "#EA580C"
-tools:
-  bash: true
-  read: true
-  edit: true
-  write: true
-  patch: true
-  grep: true
-  glob: true
-  list: true
-  webfetch: true
-  todoread: true
-  todowrite: true
 permission:
   external_directory:
     "*": deny

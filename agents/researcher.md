@@ -1,20 +1,13 @@
 ---
 description: Fetches and analyzes web content from URLs. Use for external documentation, best practices, API docs, and online resources. Do NOT use for internal codebase exploration or when you already have the specific URL.
 mode: subagent
-model: openai/gpt-5.6-terra
+model: openai/gpt-5.6-sol
 reasoningEffort: high
 temperature: 0.1
 tools:
   bash: false
-  read: true
   edit: false
-  write: true
   patch: false
-  grep: true
-  glob: true
-  list: true
-  webfetch: true
-  todoread: false
   todowrite: false
 permission:
   task:

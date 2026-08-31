@@ -1,20 +1,11 @@
 ---
 description: Writes focused tests in TDD mode (before implementation) or verification mode (after implementation). Use for multiple related tests or targeted coverage expansion. Do NOT use for single trivial assertions or broad full-suite rewrites.
 mode: subagent
-model: openai/gpt-5.6-terra
+model: openai/gpt-5.6-sol
 reasoningEffort: high
 temperature: 0.2
 tools:
-  bash: true
-  read: true
-  edit: true
-  write: true
-  patch: true
-  grep: true
-  glob: true
-  list: true
   webfetch: false
-  todoread: false
   todowrite: false
 permission:
   task:

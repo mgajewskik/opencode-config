@@ -1,19 +1,13 @@
 ---
 description: Intelligent Grok advisory agent for deep analysis, second opinions, and specialized knowledge. Use when primary agent needs high-quality reasoning on technical, coding, or soft skill topics. Spawns via Task tool, returns structured analysis for further processing. Do NOT use for code modifications or file operations.
 mode: subagent
-model: xai/grok-4-1-fast
+model: xai/grok-4.5
 temperature: 0.3
 tools:
   bash: false
-  read: true
   edit: false
   write: false
   patch: false
-  grep: true
-  glob: true
-  list: true
-  webfetch: true
-  skill: true
   todoread: false
   todowrite: false
 permission:

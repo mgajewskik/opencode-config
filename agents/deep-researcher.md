@@ -6,15 +6,6 @@ reasoningEffort: xhigh
 temperature: 0.1
 tools:
   bash: false
-  read: true
-  edit: true
-  write: true
-  patch: true
-  grep: true
-  glob: true
-  list: true
-  webfetch: true
-  todoread: false
   todowrite: false
 permission:
   task:

@@ -5,16 +5,9 @@ model: openai/gpt-5.6-sol
 reasoningEffort: xhigh
 temperature: 0.2
 tools:
-  bash: true
-  read: true
   edit: false
-  write: false
   patch: false
-  grep: true
-  glob: true
-  list: true
   webfetch: false
-  todoread: false
   todowrite: false
 permission:
   task:
