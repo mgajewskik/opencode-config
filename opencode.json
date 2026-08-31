@@ -2,6 +2,7 @@
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
   "instructions": ["AGENTS.md"],
+  "default_agent": "main",
   "model": "openai/gpt-5.6-sol",
   "small_model": "openai/gpt-5.6-terra",
   "provider": {
@@ -15,11 +16,17 @@
     "smart": {
       "prompt": "{file:./agents/smart.md}"
     },
+    "main": {
+      "prompt": "{file:./agents/main.md}"
+    },
     "build": {
-      "prompt": "{file:./agents/build.md}"
+      "disable": true
     },
     "plan": {
-      "prompt": "{file:./agents/plan.md}"
+      "disable": true
+    },
+    "general": {
+      "disable": true
     }
   },
   "lsp": true,
