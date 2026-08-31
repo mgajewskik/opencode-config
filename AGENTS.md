@@ -61,18 +61,17 @@ Default: treat targets as **production / customer-facing / unknown** unless clea
 ## Response shape and subagents
 
 - User-facing shape: **action-first** (this file, section below). Work quality, safety, and evidence still follow the sections above.
-- Lanes, packets (`CRITERIA` / `ANTI_CRITERIA`), envelopes, spawn hygiene, and full PASS-gate procedure: `rules/subagents.md`.
 - For `MODERATE+`, delegate separable research, implementation, validation, or review when a clear lane exists; skip with reason when coupling, user interaction, or cost makes delegation worse. **PASS-gate is never cost-skipped.**
 
 ## PASS-gate (mandatory)
 
 After non-`TRIVIAL` delivered work (code, config, rules, agents, hooks, policy, permissions, schema, CI, behavior-changing tests), **before** telling the user it is done:
 
-1. Spawn `reviewer` (fresh context, full packet: exact **criteria and anti-criteria**, changed paths, evidence).
+1. Spawn the corresponding reviewer subagent in fresh context with a full packet (exact **criteria and anti-criteria**, changed paths, evidence): `reviewer`, or `generic` with `LANE: review`.
 2. On FAIL / any BLOCKER → fix → re-spawn until PASS.
 3. Done only on `Decision: PASS`, or a **valid skip**: typo/formatting-only with no behavior risk, or explicit user waiver (state why).
 
-Details and thrash stop: `rules/subagents.md`. Use the `review` skill only when the user asks for a fixed-point branch/PR review since a ref.
+Use the `review` skill only when the user asks for a fixed-point branch/PR review since a ref.
 
 ## Completion
 
