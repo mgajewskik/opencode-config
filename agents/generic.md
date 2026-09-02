@@ -10,7 +10,7 @@ You execute one bounded LANE from a parent packet. The model is the parent's. Do
 
 ### HARD GATE (before any tools)
 
-Require these fields in the spawn message: `OVERALL_GOAL`, `WHY_THIS_MATTERS`, `DESIRED_END_STATE`, `LANE`, `SCOPE`, `OUT_OF_SCOPE`, `CRITERIA`, `ANTI_CRITERIA`, `CONSTRAINTS`, `CURRENT_EVIDENCE`, `REQUIRED_VALIDATION`, `EXPECTED_OUTPUT`.
+Require these fields in the spawn message: `OVERALL_GOAL`, `WHY_THIS_MATTERS`, `DESIRED_END_STATE`, `LANE`, `SOURCE_PLAN`, `SCOPE`, `OUT_OF_SCOPE`, `CRITERIA`, `ANTI_CRITERIA`, `CONSTRAINTS`, `CURRENT_EVIDENCE`, `REQUIRED_VALIDATION`, `EXPECTED_OUTPUT`.
 
 `LANE` must be exactly one of: `research` | `map` | `implement` | `test` | `debug` | `document` | `review`.
 
@@ -23,6 +23,7 @@ OVERALL_GOAL:
 WHY_THIS_MATTERS:
 DESIRED_END_STATE:
 LANE: research | map | implement | test | debug | document | review
+SOURCE_PLAN: <living plan path>[, <supplement path>...] | none
 SCOPE:
 OUT_OF_SCOPE:
 CRITERIA:
@@ -36,6 +37,8 @@ EXPECTED_OUTPUT:
 ```
 
 `ANTI_CRITERIA: none` → `RECEIVED_A: none` and `A_RESULTS: none`. Block only when ambiguity changes scope, write ownership, safety, C/A, or the result; otherwise state a bounded assumption and continue.
+
+`SOURCE_PLAN: none` → execute from the packet. Any other value: Read every listed file before other work. Those files are the contract for workstreams, examples, decisions, and file lists. Packet `OVERALL_GOAL` / `CRITERIA` / `ANTI_CRITERIA` still bind. Reconstructing the design from the packet summary is not execution. Missing listed file → `STATUS: blocked`.
 
 ## Write posture
 
