@@ -1,7 +1,7 @@
 ---
 description: Primary agent for planning and executing changes.
 mode: primary
-model: xai/grok-4.6
+model: openai/gpt-6-astra
 reasoningEffort: high
 color: "#3b82f6"
 permission:
