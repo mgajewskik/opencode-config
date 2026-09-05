@@ -61,21 +61,25 @@ Default: treat targets as **production / customer-facing / unknown** unless clea
 ## Response shape and subagents
 
 - User-facing shape: **action-first** (this file, section below). Work quality, safety, and evidence still follow the sections above.
-- For `MODERATE+`, delegate separable research, implementation, validation, or review when a clear lane exists; skip with reason when coupling, user interaction, or cost makes delegation worse. **PASS-gate is never cost-skipped.**
+- Default to direct execution, including substantial work when the main agent already has the relevant context. Delegate execution or investigation when explicitly requested, or when useful parallelism, context isolation, or independent analysis outweighs context loading, duplicated inspection, coordination, and integration.
+- Before an unrequested delegation, state the concrete benefit. Task size, file count, or a separable lane alone does not justify spawning. Keep short sequences of edits and checks local when the context is already loaded.
+- Give delegated work precise entrypoints, established evidence, and an unresolved question or deliverable. Verify returned results and integration points without repeating the whole investigation. Necessary source inspection still applies to implementers and independent reviewers.
 
 ## PASS-gate (mandatory)
 
-After non-`TRIVIAL` delivered work (code, config, rules, agents, hooks, policy, permissions, schema, CI, behavior-changing tests), **before** telling the user it is done:
+Require independent review for major or high-risk changes: substantial behavior changes, cross-component contract changes, security or permission changes, data-integrity or migration changes, deployment/CI behavior changes, and agent rules governing safety or review. Classify by consequences, not diff size; a one-line permission change qualifies. Also review when explicitly requested. Other changes use direct inspection and proportionate local validation; report why independent review was not required.
 
-1. Spawn the corresponding reviewer subagent in fresh context with a full packet (exact **criteria and anti-criteria**, changed paths, evidence): `reviewer`, or `generic` with `LANE: review`.
-2. On FAIL / any BLOCKER → fix → re-spawn until PASS.
-3. Done only on `Decision: PASS`, or a **valid skip**: typo/formatting-only with no behavior risk, or explicit user waiver (state why).
+1. After local validation, review the integrated result once in fresh context with a full packet (exact **criteria and anti-criteria**, changed paths, evidence): `reviewer`, or `generic` with `LANE: review`. Do not schedule per-file or intermediate reviews unless an early review can prevent expensive rework or a risky implementation decision.
+2. Block only on evidence-backed requirement violations, concrete correctness or safety failures, or material scope/complexity problems. Each blocker names a location, violated requirement or failure scenario, and consequence. Explicit requirements still bind even if the fix is small. Missing evidence blocks only when it prevents establishing a required behavior or safety property; name the missing check. Taste, speculative hardening, and unrelated pre-existing issues are non-blocking.
+3. On FAIL, reconcile findings against current evidence, fix confirmed blockers, and run local checks. Request targeted re-review of fixes and affected paths, preferably continuing the reviewer's context. Preserve earlier verified results for unchanged, unaffected criteria; use a fresh full review when the solution or scope materially changes.
+4. If a targeted re-review remains inconclusive without new actionable evidence, stop as blocked and ask for the smallest needed decision or evidence. Never turn an unresolved blocker into PASS to end a loop.
+5. Required review closes only on `Decision: PASS` or an explicit user waiver (state why). Cost alone does not waive required review. Non-blocking suggestions do not trigger fixes or another review unless needed for the task or requested by the user.
 
 Use the `review` skill only when the user asks for a fixed-point branch/PR review since a ref.
 
 ## Completion
 
-For non-trivial work report: files changed; criterion status; anti-criterion checks; evidence; PASS-gate result (`Decision: PASS` or skip reason); unknowns or skipped validation; leftovers or next probes. Done = PASS-gate closed (PASS or valid skip).
+For non-trivial work report: files changed; criterion status; anti-criterion checks; evidence; review status (`Decision: PASS`, not required with reason, or explicit waiver); unknowns or skipped validation; leftovers or next probes. Done = required validation complete and any required PASS-gate closed.
 
 If stuck: completed work, blocker, smallest next decision.
 
