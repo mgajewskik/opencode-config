@@ -2,7 +2,7 @@
 description: Primary agent for planning and executing changes.
 mode: primary
 model: openai/gpt-6-astra
-reasoningEffort: high
+reasoningEffort: medium
 color: "#3b82f6"
 permission:
   task:
