@@ -16,6 +16,37 @@
     "smart": {
       "prompt": "{file:./agents/smart.md}"
     },
+    "smart-astra": {
+      "description": "Astra high worker reserved for the hardest or consequential reasoning, unresolved reasoning gaps, and required independent review. Prefer Grok for routine execution. Smart supplies the task-specific role and criteria; this is routing policy, not a proven model ranking.",
+      "mode": "subagent",
+      "model": "openai/gpt-6-astra",
+      "options": { "reasoningEffort": "high" },
+      "prompt": "{file:./prompts/smart-worker.md}",
+      "permission": { "task": "deny" }
+    },
+    "smart-grok-4-5": {
+      "description": "Preferred Grok 4.5 high worker for straightforward, low-ambiguity tasks: mechanical edits, exact transformations, bounded lookups, and simple exploration with inexpensive independent checks. Smart supplies detailed instructions and verifies output and compliance.",
+      "mode": "subagent",
+      "model": "xai/grok-4.5",
+      "options": { "reasoningEffort": "high" },
+      "prompt": "{file:./prompts/smart-worker.md}",
+      "permission": { "task": "deny" }
+    },
+    "smart-grok-4-6": {
+      "description": "Default Grok 4.6 high worker for most delegated tasks requiring nontrivial reasoning: detailed-plan execution, multi-file implementation, diagnosis, exploration, tests, and source-backed research. Smart owns planning and validation. This is the user's routing preference, not a benchmark-proven ranking.",
+      "mode": "subagent",
+      "model": "xai/grok-4.6",
+      "options": { "reasoningEffort": "high" },
+      "prompt": "{file:./prompts/smart-worker.md}",
+      "permission": { "task": "deny" }
+    },
+    "smart-flash": {
+      "description": "Optional Gemini 3.8 Flash worker when explicitly requested or current task evidence gives a concrete advantage and access is verified. Not the default route or a replacement for required independent review. Smart supplies the role and acceptance criteria.",
+      "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
+      "prompt": "{file:./prompts/smart-worker.md}",
+      "permission": { "task": "deny" }
+    },
     "main": {
       "prompt": "{file:./agents/main.md}"
     },
